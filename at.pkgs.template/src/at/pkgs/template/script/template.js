@@ -4,16 +4,16 @@
 	root.template = function(source) {
 		return {
 			template: at.pkgs.template(source),
-			render: function(attributes) {
+			render: function(iterable) {
 				var context;
 				var iterator;
-				var key;
+				var entry;
 
 				context = new Object();
-				iterator = attributes.keySet().iterator();
+				iterator = iterable.iterator();
 				while (iterator.hasNext()) {
-					key = iterator.next();
-					context[key] = attributes.get(key);
+					entry = iterator.next();
+					context[entry.getKey()] = entry.getValue();
 				}
 				return this.template(context);
 			}

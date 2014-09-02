@@ -45,16 +45,20 @@ public class Template {
 		}
 	}
 
-	public String render(Map<String, Object> attributes) {
+	public String render(Iterable<Map.Entry<String, Object>> iterable) {
 		try {
 			return (String)this.engine.getInvoker().invokeMethod(
 					this.script,
 					"render",
-					attributes);
+					iterable);
 		}
 		catch (ScriptException | NoSuchMethodException throwable) {
 			throw new TemplateException(throwable);
 		}
+	}
+
+	public String render(Map<String, Object> attributes) {
+		return this.render(attributes.entrySet());
 	}
 
 }

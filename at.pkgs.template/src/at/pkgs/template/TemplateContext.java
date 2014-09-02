@@ -17,10 +17,20 @@
 
 package at.pkgs.template;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
 
 public class TemplateContext extends HashMap<String, Object> {
+
+	public static class Entry extends SimpleImmutableEntry<String, Object> {
+
+		private static final long serialVersionUID = 1L;
+
+		public Entry(String name, Object value) {
+			super(name, value);
+		}
+
+	}
 
 	private static final long serialVersionUID = 1L;
 
@@ -38,6 +48,12 @@ public class TemplateContext extends HashMap<String, Object> {
 
 	public TemplateContext() {
 		super();
+	}
+
+	public TemplateContext(Entry... entries) {
+		super();
+		for (Entry entry : entries)
+			this.put(entry.getKey(), entry.getValue());
 	}
 
 }
