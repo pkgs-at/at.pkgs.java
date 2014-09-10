@@ -38,7 +38,7 @@ public class TemplateEngine {
 		this.resolver = resolver;
 		this.script = new ScriptEngineManager().getEngineByName("nashorn");
 		if (this.script == null)
-			throw new TemplateException("script engine narshorn not found");
+			throw new TemplateException("script engine nashorn not found");
 		try (InputStream input =
 				this.getClass().getResourceAsStream(
 						"script/at.pkgs-1.0.0.js")) {
