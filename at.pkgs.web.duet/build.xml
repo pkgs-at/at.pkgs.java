@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project default="build">
 	<!-- project settings -->
-	<property name="name" value="at.pkgs.template"/>
+	<property name="name" value="at.pkgs.web.duet"/>
 	<property name="version" value="1.0.0"/>
 	<!-- directories -->
 	<property name="bindir" value="./bin"/>

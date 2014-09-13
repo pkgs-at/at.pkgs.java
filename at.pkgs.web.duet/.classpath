@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.8.0_20"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/at.pkgs.template"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/at.pkgs.web.http"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/at.pkgs.web.page"/>
+	<classpathentry kind="lib" path="/dependancy/commons-configuration-1.10.jar" sourcepath="/dependancy/sources/commons-configuration-1.10-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/commons-lang-2.6.jar" sourcepath="/dependancy/sources/commons-lang-2.6-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/commons-logging-1.2.jar" sourcepath="/dependancy/sources/commons-logging-1.2-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/javax.servlet-api-3.1.0.jar" sourcepath="/dependancy/sources/javax.servlet-api-3.1.0-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/jsonic-1.3.3p2.jar" sourcepath="/dependancy/sources/jsonic-1.3.3p2-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/jul-to-slf4j-1.7.7.jar" sourcepath="/dependancy/sources/jul-to-slf4j-1.7.7-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/log4j-1.2-api-2.0.2.jar" sourcepath="/dependancy/sources/log4j-1.2-api-2.0.2-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/log4j-api-2.0.2.jar" sourcepath="/dependancy/sources/log4j-api-2.0.2-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/log4j-core-2.0.2.jar" sourcepath="/dependancy/sources/log4j-core-2.0.2-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/log4j-jcl-2.0.2.jar" sourcepath="/dependancy/sources/log4j-jcl-2.0.2-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/log4j-slf4j-impl-2.0.2.jar" sourcepath="/dependancy/sources/log4j-slf4j-impl-2.0.2-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/log4j-web-2.0.2.jar" sourcepath="/dependancy/sources/log4j-web-2.0.2-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/mime-util-2.1.3.jar" sourcepath="/dependancy/sources/mime-util-2.1.3-sources.jar"/>
+	<classpathentry kind="lib" path="/dependancy/slf4j-api-1.7.7.jar" sourcepath="/dependancy/sources/slf4j-api-1.7.7-sources.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
