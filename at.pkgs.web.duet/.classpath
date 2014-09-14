@@ -19,5 +19,6 @@
 	<classpathentry kind="lib" path="/dependancy/log4j-web-2.0.2.jar" sourcepath="/dependancy/sources/log4j-web-2.0.2-sources.jar"/>
 	<classpathentry kind="lib" path="/dependancy/mime-util-2.1.3.jar" sourcepath="/dependancy/sources/mime-util-2.1.3-sources.jar"/>
 	<classpathentry kind="lib" path="/dependancy/slf4j-api-1.7.7.jar" sourcepath="/dependancy/sources/slf4j-api-1.7.7-sources.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/at.pkgs.logging"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -25,6 +25,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.xml.XmlConfiguration;
+import at.pkgs.logging.LoggerFactory;
 
 public class LoggingManager extends AbstractManager {
 
@@ -67,8 +68,14 @@ public class LoggingManager extends AbstractManager {
 
 	}
 
+	private final org.apache.commons.configuration.Configuration configuration;
+
 	public LoggingManager(AbstractApplication application) {
 		super(application);
+		this.configuration = this.getApplication()
+				.getConfigurationManager()
+				.get("LoggingManager");
+		LoggerFactory.get().depth(this.configuration.getInt("stacktrace", 8));
 		this.reload();
 	}
 

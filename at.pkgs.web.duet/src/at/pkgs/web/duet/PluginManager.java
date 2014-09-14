@@ -33,7 +33,7 @@ public class PluginManager extends AbstractManager {
 
 	public void register(AbstractPlugin plugin) {
 		this.plugins.put(plugin.getName(), plugin);
-		this.info("plugin %s registered", plugin.getName());
+		this.information("plugin %s registered", plugin.getName());
 	}
 
 	protected Pluggable pluggable(AbstractPlugin plugin) {

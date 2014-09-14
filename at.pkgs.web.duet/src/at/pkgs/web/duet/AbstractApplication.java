@@ -20,12 +20,11 @@ package at.pkgs.web.duet;
 import java.io.InputStream;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import at.pkgs.logging.Logger;
 
 public abstract class AbstractApplication implements Loggable {
 
-	private final Logger logger = LogManager.getLogger(this);
+	private final Logger logger = Logger.of(this).skip(1);
 
 	private boolean initialized;
 
@@ -74,7 +73,7 @@ public abstract class AbstractApplication implements Loggable {
 			throws ServletException {
 		synchronized (this) {
 			if (this.initialized) return;
-			this.info("Application initializing");
+			this.information("Application initializing");
 			this.context = context;
 			try {
 				this.configuration = new ConfigurationManager(this);
@@ -95,7 +94,7 @@ public abstract class AbstractApplication implements Loggable {
 			finally {
 				this.initialized = true;
 			}
-			this.info("Application initialized");
+			this.information("Application initialized");
 		}
 	}
 

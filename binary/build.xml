@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project default="build">
 	<target name="build">
+		<ant antfile="../at.pkgs.logging/build.xml" inheritAll="false" />
+		<ant antfile="../at.pkgs.logging.slf4j/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.template/build.xml" inheritAll="false" />
+		<ant antfile="../at.pkgs.sql.nestedtx/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.web.http/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.web.page/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.web.duet/build.xml" inheritAll="false" />

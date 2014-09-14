@@ -15,32 +15,12 @@
  * limitations under the License.
  */
 
-package at.pkgs.web.duet;
+package at.pkgs.logging;
 
-import javax.servlet.ServletContext;
-import at.pkgs.logging.Logger;
+public interface Sink {
 
-public abstract class AbstractManager implements Loggable {
+	public boolean enabled(Level level);
 
-	private final Logger logger = Logger.of(this).skip(1);
-
-	private final AbstractApplication application;
-
-	protected AbstractManager(AbstractApplication application) {
-		this.application = application;
-	}
-
-	@Override
-	public Logger logger() {
-		return this.logger;
-	}
-
-	public AbstractApplication getApplication() {
-		return this.application;
-	}
-
-	public ServletContext getServletContext() {
-		return this.getApplication().getServletContext();
-	}
+	public void write(Level level, String message, Throwable throwable);
 
 }

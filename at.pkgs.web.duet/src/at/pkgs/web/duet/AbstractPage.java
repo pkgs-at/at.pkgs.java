@@ -20,8 +20,7 @@ package at.pkgs.web.duet;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.ServletException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import at.pkgs.logging.Logger;
 import at.pkgs.web.page.PageHandler;
 import at.pkgs.web.page.PageRequest;
 import at.pkgs.web.page.PageResponse;
@@ -37,7 +36,7 @@ extends PageHandler implements Loggable {
 
 		protected abstract AbstractApplication getApplication();
 
-		private final Logger logger = LogManager.getLogger(this);
+		private final Logger logger = Logger.of(this).skip(1);
 
 		@Override
 		public Logger logger() {
@@ -89,7 +88,7 @@ extends PageHandler implements Loggable {
 
 	}
 
-	private final Logger logger = LogManager.getLogger(this);
+	private final Logger logger = Logger.of(this).skip(1);
 
 	private Pluggable pluggable;
 

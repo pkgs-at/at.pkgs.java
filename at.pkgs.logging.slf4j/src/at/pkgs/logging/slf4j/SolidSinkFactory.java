@@ -15,32 +15,17 @@
  * limitations under the License.
  */
 
-package at.pkgs.web.duet;
+package at.pkgs.logging.slf4j;
 
-import javax.servlet.ServletContext;
-import at.pkgs.logging.Logger;
+import org.slf4j.LoggerFactory;
+import at.pkgs.logging.SinkFactory;
+import at.pkgs.logging.Sink;
 
-public abstract class AbstractManager implements Loggable {
-
-	private final Logger logger = Logger.of(this).skip(1);
-
-	private final AbstractApplication application;
-
-	protected AbstractManager(AbstractApplication application) {
-		this.application = application;
-	}
+public class SolidSinkFactory implements SinkFactory {
 
 	@Override
-	public Logger logger() {
-		return this.logger;
-	}
-
-	public AbstractApplication getApplication() {
-		return this.application;
-	}
-
-	public ServletContext getServletContext() {
-		return this.getApplication().getServletContext();
+	public Sink sink(String name) {
+		return new SolidSink(LoggerFactory.getLogger(name));
 	}
 
 }

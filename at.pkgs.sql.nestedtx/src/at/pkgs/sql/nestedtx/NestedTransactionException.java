@@ -15,32 +15,28 @@
  * limitations under the License.
  */
 
-package at.pkgs.web.duet;
+package at.pkgs.sql.nestedtx;
 
-import javax.servlet.ServletContext;
-import at.pkgs.logging.Logger;
+import java.sql.SQLException;
 
-public abstract class AbstractManager implements Loggable {
+public class NestedTransactionException extends RuntimeException {
 
-	private final Logger logger = Logger.of(this).skip(1);
+	private static final long serialVersionUID = 1L;
 
-	private final AbstractApplication application;
-
-	protected AbstractManager(AbstractApplication application) {
-		this.application = application;
+	NestedTransactionException() {
+		super();
 	}
 
-	@Override
-	public Logger logger() {
-		return this.logger;
+	NestedTransactionException(String message) {
+		super(message);
 	}
 
-	public AbstractApplication getApplication() {
-		return this.application;
+	NestedTransactionException(SQLException cause) {
+		super(cause);
 	}
 
-	public ServletContext getServletContext() {
-		return this.getApplication().getServletContext();
+	NestedTransactionException(String message, SQLException cause) {
+		super(message, cause);
 	}
 
 }

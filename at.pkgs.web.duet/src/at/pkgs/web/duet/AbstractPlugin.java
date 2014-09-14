@@ -23,8 +23,7 @@ import java.util.Collections;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import at.pkgs.logging.Logger;
 import at.pkgs.web.page.PageHandler;
 
 public abstract class AbstractPlugin implements Loggable {
@@ -32,7 +31,7 @@ public abstract class AbstractPlugin implements Loggable {
 	public static abstract class Listener
 	implements ServletContextListener, Loggable {
 
-		private final Logger logger = LogManager.getLogger(this);
+		private final Logger logger = Logger.of(this).skip(1);
 
 		@Override
 		public Logger logger() {
@@ -99,7 +98,7 @@ public abstract class AbstractPlugin implements Loggable {
 
 	}
 
-	private final Logger logger = LogManager.getLogger(this);
+	private final Logger logger = Logger.of(this).skip(1);
 
 	private final Mapping <Class<? extends PageHandler>> handlers;
 
