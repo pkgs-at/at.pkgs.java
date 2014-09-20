@@ -30,12 +30,7 @@ public class ConfigurationManager extends AbstractManager {
 
 	public ConfigurationManager(AbstractApplication application) {
 		super(application);
-		this.configurationDirectory =
-				new File(
-						application.getProperty(
-								"configuration",
-								this.getServletContext().getRealPath(
-										"/WEB-INF")));
+		this.configurationDirectory = this.getConfigurationParameter();
 		this.configuration = new PropertiesConfiguration();
 		try {
 			this.configuration.load(
@@ -49,6 +44,25 @@ public class ConfigurationManager extends AbstractManager {
 					this.getConfigurationFile("application.properties"));
 			throw new RuntimeException(throwable);
 		}
+	}
+
+	protected File getConfigurationParameter() {
+		String value;
+
+		value = this.getApplication().getProperty(
+				"configuration",
+				(String)null);
+		if (value != null)
+			return new File(
+					value);
+		value = System.getProperty("at.pkgs.web.duet.configuration_root");
+		if (value != null)
+			return new File(
+					value,
+					this.getApplication().getClass().getPackage().getName());
+		else
+			return new File(
+					this.getServletContext().getRealPath("/WEB-INF"));
 	}
 
 	public File getConfigurationDirectory() {
