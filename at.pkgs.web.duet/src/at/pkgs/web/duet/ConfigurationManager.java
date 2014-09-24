@@ -32,18 +32,8 @@ public class ConfigurationManager extends AbstractManager {
 		super(application);
 		this.configurationDirectory = this.getConfigurationParameter();
 		this.configuration = new PropertiesConfiguration();
-		try {
-			this.configuration.load(
-					this.getConfigurationFile(
-							"application.properties"));
-		}
-		catch (ConfigurationException throwable) {
-			this.error(
-					throwable,
-					"failed on load configuration from %s",
-					this.getConfigurationFile("application.properties"));
-			throw new RuntimeException(throwable);
-		}
+		this.load("application.properties");
+		this.load("application.local.properties");
 	}
 
 	protected File getConfigurationParameter() {
@@ -71,6 +61,23 @@ public class ConfigurationManager extends AbstractManager {
 
 	public File getConfigurationFile(String name) {
 		return new File(this.getConfigurationDirectory(), name);
+	}
+
+	protected void load(String name) {
+		File file;
+
+		file = this.getConfigurationFile(name);
+		if (!file.exists()) return;
+		try {
+			this.configuration.load(file);
+		}
+		catch (ConfigurationException throwable) {
+			this.error(
+					throwable,
+					"failed on load configuration from %s",
+					file);
+			throw new RuntimeException(throwable);
+		}
 	}
 
 	public Configuration get(String prefix) {
