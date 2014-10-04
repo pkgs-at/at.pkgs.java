@@ -20,29 +20,29 @@ package at.pkgs.sql.query;
 import java.util.List;
 import java.util.ArrayList;
 
-abstract class Criteria<TableType extends Enum<?>>
-extends Criterion<TableType>
-implements Criterion.Parent<TableType> {
+abstract class Criteria<TableType extends Enum<?>, ModelType>
+extends Criterion<TableType, ModelType>
+implements Criterion.Parent<TableType, ModelType> {
 
-	private final List<Criterion<TableType>> children; 
+	private final List<Criterion<TableType, ModelType>> children; 
 
 	protected Criteria() {
 		super(null);
-		this.children = new ArrayList<Criterion<TableType>>();
+		this.children = new ArrayList<Criterion<TableType, ModelType>>();
 	}
 
 	abstract void appendJoint(QueryBuilder<TableType> builder);
 
-	void add(Criterion<TableType> child) {
+	void add(Criterion<TableType, ModelType> child) {
 		if (child.isEmpty()) return;
 		this.children.add(child);
 	}
 
-	protected Expression<TableType> with(TableType column) {
-		return new Expression<TableType>(this, column);
+	protected Expression<TableType, ModelType> with(TableType column) {
+		return new Expression<TableType, ModelType>(this, column);
 	}
 
-	protected void with(Criteria<TableType> criteria) {
+	protected void with(Criteria<TableType, ModelType> criteria) {
 		this.add(criteria);
 	}
 
@@ -59,7 +59,7 @@ implements Criterion.Parent<TableType> {
 			if (this.isEmpty()) return;
 			first = true;
 			builder.append(" WHERE ");
-			for (Criterion<TableType> child : this.children) {
+			for (Criterion<TableType, ModelType> child : this.children) {
 				if (first) first = false;
 				else this.appendJoint(builder);
 				child.build(builder, false);
@@ -73,7 +73,7 @@ implements Criterion.Parent<TableType> {
 
 			first = true;
 			builder.append('(');
-			for (Criterion<TableType> child : this.children) {
+			for (Criterion<TableType, ModelType> child : this.children) {
 				if (first) first = false;
 				else this.appendJoint(builder);
 				child.build(builder, false);

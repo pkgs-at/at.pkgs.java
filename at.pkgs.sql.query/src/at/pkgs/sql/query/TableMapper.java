@@ -50,12 +50,14 @@ class TableMapper<TableType, ModelType> {
 		this.table = table;
 		this.type = type;
 		columns = new HashMap<TableType, ColumnMapper<TableType, ModelType>>();
-		for (TableType column : this.table.getColumns().keySet())
-			columns.put(
-					column,
-					new ColumnMapper<TableType, ModelType>(
-							this,
-							this.table.getColumn(column)));
+		for (TableType column : this.table.getColumns().keySet()) {
+			ColumnMapper<TableType, ModelType> mapper;
+
+			mapper = new ColumnMapper<TableType, ModelType>(
+					this,
+					this.table.getColumn(column));
+			if (mapper.hasField()) columns.put(column, mapper);
+		}
 		this.columns = Collections.unmodifiableMap(columns);
 	}
 

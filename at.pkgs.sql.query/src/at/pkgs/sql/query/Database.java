@@ -121,8 +121,8 @@ public class Database {
 
 	}
 
-	public static abstract class And<TableType extends Enum<?>>
-	extends Criteria<TableType> {
+	public static abstract class And<TableType extends Enum<?>, ModelType>
+	extends Criteria<TableType, ModelType> {
 
 		void appendJoint(QueryBuilder<TableType> builder) {
 			builder.append(" AND ");
@@ -130,8 +130,8 @@ public class Database {
 
 	}
 
-	public static abstract class Or<TableType extends Enum<?>>
-	extends Criteria<TableType> {
+	public static abstract class Or<TableType extends Enum<?>, ModelType>
+	extends Criteria<TableType, ModelType> {
 
 		void appendJoint(QueryBuilder<TableType> builder) {
 			builder.append(" OR ");
@@ -148,21 +148,24 @@ public class Database {
 
 	public static abstract class Query
 	<TableType extends Enum<?>, ModelType>
-	extends AbstractQuery<TableType> {
+	extends AbstractQuery<TableType, ModelType> {
 
-		protected abstract class And extends Database.And<TableType> {
-
-			// nothing
-
-		}
-
-		protected abstract class Or extends Database.Or<TableType> {
+		protected abstract class And
+		extends Database.And<TableType, ModelType> {
 
 			// nothing
 
 		}
 
-		protected abstract class OrderBy extends Database.OrderBy<TableType> {
+		protected abstract class Or
+		extends Database.Or<TableType, ModelType> {
+
+			// nothing
+
+		}
+
+		protected abstract class OrderBy
+		extends Database.OrderBy<TableType> {
 
 			// nothing
 
@@ -170,10 +173,13 @@ public class Database {
 
 		private final Class<TableType> table;
 
+		private final Class<ModelType> model;
+
 		private Database database;
 
 		protected Query(Class<TableType> table, Class<ModelType> model) {
 			this.table = table;
+			this.model = model;
 		}
 
 		void prepare(Database database) {
@@ -190,17 +196,12 @@ public class Database {
 			return this.table;
 		}
 
-	}
-
-	/*
-	public static abstract class ModelQuery
-	<TableType extends Enum<?>, ModelType>
-	extends AbstractQuery<TableType, ModelType> {
-
-		protected abstract ModelType define();
+		@Override
+		protected Class<ModelType> getModelType() {
+			return this.model;
+		}
 
 	}
-	 */
 
 	private final Dialect dialect;
 
@@ -237,10 +238,14 @@ public class Database {
 		}
 	}
 
-	public <TableType extends Enum<?>>
-	at.pkgs.sql.query.Query<TableType> query(
-			Class<TableType> table) {
-		return new at.pkgs.sql.query.Query<TableType>(this, table);
+	public <TableType extends Enum<?>, ModelType>
+	at.pkgs.sql.query.Query<TableType, ModelType> query(
+			Class<TableType> table,
+			Class<ModelType> model) {
+		return new at.pkgs.sql.query.Query<TableType, ModelType>(
+				this,
+				table,
+				model);
 	}
 
 	public <TableType extends Enum<?>, ModelType>

@@ -17,16 +17,19 @@
 
 package at.pkgs.sql.query;
 
-public class Query<TableType extends Enum<?>>
-extends AbstractQuery<TableType> {
+public class Query<TableType extends Enum<?>, ModelType>
+extends AbstractQuery<TableType, ModelType> {
 
 	private final Database database;
 
 	private final Class<TableType> table;
 
-	Query(Database database, Class<TableType> table) {
+	private final Class<ModelType> model;
+
+	Query(Database database, Class<TableType> table, Class<ModelType> model) {
 		this.database = database;
 		this.table = table;
+		this.model = model;
 	}
 
 	@Override
@@ -37,6 +40,11 @@ extends AbstractQuery<TableType> {
 	@Override
 	protected Class<TableType> getTableType() {
 		return this.table;
+	}
+
+	@Override
+	protected Class<ModelType> getModelType() {
+		return this.model;
 	}
 
 }

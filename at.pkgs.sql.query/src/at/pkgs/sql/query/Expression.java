@@ -19,13 +19,14 @@ package at.pkgs.sql.query;
 
 import java.util.Arrays;
 
-public class Expression<TableType extends Enum<?>> {
+public class Expression<TableType extends Enum<?>, ModelType> {
 
-	private abstract class AbstractCriterion extends Criterion<TableType> {
+	private abstract class AbstractCriterion
+	extends Criterion<TableType, ModelType> {
 
 		protected abstract void build(QueryBuilder<TableType> builder);
 
-		AbstractCriterion(Parent<TableType> parent) {
+		AbstractCriterion(Parent<TableType, ModelType> parent) {
 			super(parent);
 		}
 
@@ -42,16 +43,18 @@ public class Expression<TableType extends Enum<?>> {
 
 	}
 
-	private final Criteria.Parent<TableType> parent;
+	private final Criteria.Parent<TableType, ModelType> parent;
 
 	private final TableType column;
 
-	Expression(Criteria.Parent<TableType> parent, TableType column) {
+	Expression(
+			Criteria.Parent<TableType, ModelType> parent,
+			TableType column) {
 		this.parent = parent;
 		this.column = column;
 	}
 
-	public Criterion<TableType> isNull() {
+	public Criterion<TableType, ModelType> isNull() {
 		return new AbstractCriterion(this.parent) {
 
 			@Override
@@ -64,7 +67,7 @@ public class Expression<TableType extends Enum<?>> {
 		};
 	}
 
-	public Criterion<TableType> isNotNull() {
+	public Criterion<TableType, ModelType> isNotNull() {
 		return new AbstractCriterion(this.parent) {
 
 			@Override
@@ -77,7 +80,7 @@ public class Expression<TableType extends Enum<?>> {
 		};
 	}
 
-	public Criterion<TableType> is(
+	public Criterion<TableType, ModelType> is(
 			final Object value) {
 		return new AbstractCriterion(this.parent) {
 
@@ -97,7 +100,7 @@ public class Expression<TableType extends Enum<?>> {
 		};
 	}
 
-	public Criterion<TableType> isNot(
+	public Criterion<TableType, ModelType> isNot(
 			final Object value) {
 		return new AbstractCriterion(this.parent) {
 
@@ -117,7 +120,7 @@ public class Expression<TableType extends Enum<?>> {
 		};
 	}
 
-	public Criterion<TableType> between(
+	public Criterion<TableType, ModelType> between(
 			final Object left,
 			final Object right) {
 		return new AbstractCriterion(this.parent) {
@@ -134,7 +137,7 @@ public class Expression<TableType extends Enum<?>> {
 		};
 	}
 
-	public Criterion<TableType> notBetween(
+	public Criterion<TableType, ModelType> notBetween(
 			final Object left,
 			final Object right) {
 		return new AbstractCriterion(this.parent) {
@@ -151,7 +154,7 @@ public class Expression<TableType extends Enum<?>> {
 		};
 	}
 
-	public Criterion<TableType> oneOf(
+	public Criterion<TableType, ModelType> oneOf(
 			final Iterable<Object> values) {
 		return new AbstractCriterion(this.parent) {
 
@@ -185,12 +188,12 @@ public class Expression<TableType extends Enum<?>> {
 		};
 	}
 
-	public Criterion<TableType> oneOf(
+	public Criterion<TableType, ModelType> oneOf(
 			Object... values) {
 		return this.oneOf(Arrays.asList(values));
 	}
 
-	public Criterion<TableType> noneOf(
+	public Criterion<TableType, ModelType> noneOf(
 			final Iterable<Object> values) {
 		return new AbstractCriterion(this.parent) {
 
@@ -224,7 +227,7 @@ public class Expression<TableType extends Enum<?>> {
 		};
 	}
 
-	public Criterion<TableType> noneOf(
+	public Criterion<TableType, ModelType> noneOf(
 			Object... values) {
 		return this.noneOf(Arrays.asList(values));
 	}

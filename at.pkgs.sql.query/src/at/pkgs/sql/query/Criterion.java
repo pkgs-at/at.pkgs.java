@@ -17,29 +17,29 @@
 
 package at.pkgs.sql.query;
 
-public abstract class Criterion<TableType extends Enum<?>> {
+public abstract class Criterion<TableType extends Enum<?>, ModelType> {
 
-	static interface Parent<TableType> {
+	static interface Parent<TableType, ModelType> {
 
 		// nothing
 
 	}
 
-	private final Parent<TableType> parent;
+	private final Parent<TableType, ModelType> parent;
 
-	Criterion(Parent<TableType> parent) {
+	Criterion(Parent<TableType, ModelType> parent) {
 		this.parent = parent;
 		if (parent instanceof AbstractQuery)
-			((AbstractQuery<TableType>)parent).where(this);
+			((AbstractQuery<TableType, ModelType>)parent).where(this);
 		if (parent instanceof Criteria)
-			((Criteria<TableType>)parent).add(this);
+			((Criteria<TableType, ModelType>)parent).add(this);
 	}
 
-	public Query<TableType> query() {
+	public Query<TableType, ModelType> query() {
 		if (!(this.parent instanceof Query))
 			throw new UnsupportedOperationException(
 					"unsupported in this context");
-		return (Query<TableType>)this.parent;
+		return (Query<TableType, ModelType>)this.parent;
 	}
 
 	abstract boolean isEmpty();

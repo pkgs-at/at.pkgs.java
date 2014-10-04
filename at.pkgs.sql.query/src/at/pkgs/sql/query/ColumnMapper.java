@@ -133,8 +133,12 @@ class ColumnMapper<TableType, ModelType> {
 		return null;
 	}
 
-	public void setValue(ModelType model, Object value) {
-		if (this.field == null)
+	boolean hasField() {
+		return this.field != null;
+	}
+
+	void setValue(ModelType model, Object value) {
+		if (!this.hasField())
 			throw new Database.Exception(
 					"no mapping for %s in %s",
 					this.column.getFieldName(),
@@ -153,10 +157,10 @@ class ColumnMapper<TableType, ModelType> {
 		}
 	}
 
-	public Object getValue(ModelType model) {
+	Object getValue(ModelType model) {
 		Object value;
 
-		if (this.field == null)
+		if (!this.hasField())
 			throw new Database.Exception(
 					"no mapping for %s in %s",
 					this.column.getFieldName(),

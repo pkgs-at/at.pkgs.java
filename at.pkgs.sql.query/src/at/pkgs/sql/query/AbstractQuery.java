@@ -17,10 +17,10 @@
 
 package at.pkgs.sql.query;
 
-public abstract class AbstractQuery<TableType extends Enum<?>>
-implements Criterion.Parent<TableType> {
+public abstract class AbstractQuery<TableType extends Enum<?>, ModelType>
+implements Criterion.Parent<TableType, ModelType> {
 
-	private Criterion<TableType> where;
+	private Criterion<TableType, ModelType> where;
 
 	private Database.OrderBy<TableType> order;
 
@@ -28,29 +28,35 @@ implements Criterion.Parent<TableType> {
 		// do nothing
 	}
 
-	protected abstract Class<TableType> getTableType();
-
 	protected abstract Database getDatabase();
 
-	AbstractQuery<TableType> where(Criterion<TableType> criterion) {
+	protected abstract Class<TableType> getTableType();
+
+	protected abstract Class<ModelType> getModelType();
+
+	AbstractQuery<TableType, ModelType> where(
+			Criterion<TableType, ModelType> criterion) {
 		this.where = criterion;
 		return this;
 	}
 
-	public AbstractQuery<TableType> where(Criteria<TableType> criterion) {
-		return this.where((Criterion<TableType>)criterion);
+	public AbstractQuery<TableType, ModelType> where(
+			Criteria<TableType, ModelType> criterion) {
+		return this.where((Criterion<TableType, ModelType>)criterion);
 	}
 
-	public Expression<TableType> where(TableType column) {
-		return new Expression<TableType>(this, column);
+	public Expression<TableType, ModelType> where(TableType column) {
+		return new Expression<TableType, ModelType>(this, column);
 	}
 
-	public AbstractQuery<TableType> sort(Database.OrderBy<TableType> order) {
+	public AbstractQuery<TableType, ModelType> sort(
+			Database.OrderBy<TableType> order) {
 		this.order = order;
 		return this;
 	}
 
-	public AbstractQuery<TableType> orderBy(boolean ascending, TableType... columns) {
+	public AbstractQuery<TableType, ModelType> orderBy(
+			boolean ascending, TableType... columns) {
 		if (this.order == null) {
 			this.order = new Database.OrderBy<TableType>() {
 
@@ -62,11 +68,13 @@ implements Criterion.Parent<TableType> {
 		return this;
 	}
 
-	public AbstractQuery<TableType> orderByAscending(TableType... columns) {
+	public AbstractQuery<TableType, ModelType> orderByAscending(
+			TableType... columns) {
 		return this.orderBy(true, columns);
 	}
 
-	public AbstractQuery<TableType> orderByDescending(TableType... columns) {
+	public AbstractQuery<TableType, ModelType> orderByDescending(
+			TableType... columns) {
 		return this.orderBy(false, columns);
 	}
 

@@ -19,21 +19,21 @@ public class Program {
 
 		database = new Database(new SqlServerDialect(), null);
 		System.out.println(
-				database.query(Preference.Table.class)
+				database.query(Preference.Table.class, Preference.class)
 						.buildSelectStatement());
 		System.out.println(
-				database.query(Preference.Table.class)
+				database.query(Preference.Table.class, Preference.class)
 						.where(Preference.Table.Key).is("AAA")
 						.query().buildSelectStatement());
 		System.out.println(
-				database.query(Preference.Table.class)
-						.where(new Database.And<Preference.Table>(){{
+				database.query(Preference.Table.class, Preference.class)
+						.where(new Database.And<Preference.Table, Preference>(){{
 							with(Preference.Table.Key).is("AAA");
 						}})
 						.buildSelectStatement());
 		System.out.println(
-				database.query(Preference.Table.class)
-						.where(new Database.And<Preference.Table>(){{
+				database.query(Preference.Table.class, Preference.class)
+						.where(new Database.And<Preference.Table, Preference>(){{
 							with(Preference.Table.Key).is(null);
 						}})
 						.buildSelectStatement());
