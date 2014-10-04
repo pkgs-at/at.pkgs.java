@@ -5,10 +5,7 @@ import at.pkgs.sql.query.Database;
 
 public class Preference {
 
-	@Database.Table(
-			schema = "dbo",
-			name = "t_preference",
-			type = Preference.class)
+	@Database.Table(schema = "dbo", name = "t_preference")
 	public static enum Table {
 
 		@Database.Column(name = "key")

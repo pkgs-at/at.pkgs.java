@@ -17,7 +17,7 @@
 
 package at.pkgs.sql.query;
 
-public abstract class Criterion<TableType> {
+public abstract class Criterion<TableType extends Enum<?>> {
 
 	static interface Parent<TableType> {
 
@@ -29,8 +29,8 @@ public abstract class Criterion<TableType> {
 
 	Criterion(Parent<TableType> parent) {
 		this.parent = parent;
-		if (parent instanceof Query)
-			((Query<TableType>)parent).where(this);
+		if (parent instanceof AbstractQuery)
+			((AbstractQuery<TableType>)parent).where(this);
 		if (parent instanceof Criteria)
 			((Criteria<TableType>)parent).add(this);
 	}

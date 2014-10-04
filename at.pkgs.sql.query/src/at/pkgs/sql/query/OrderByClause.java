@@ -61,12 +61,20 @@ class OrderByClause<TableType> {
 		this.list = new ArrayList<Entry>();
 	}
 
-	protected void ascending(TableType column) {
-		this.list.add(new Entry(column, Direction.ASCENDING));
+	protected void with(boolean ascending, TableType... columns) {
+		Direction direction;
+
+		direction = ascending ? Direction.ASCENDING : Direction.DESCENDING;
+		for (TableType column : columns)
+			this.list.add(new Entry(column, direction));
 	}
 
-	protected void descending(TableType column) {
-		this.list.add(new Entry(column, Direction.DESCENDING));
+	protected void ascending(TableType... columns) {
+		this.with(true, columns);
+	}
+
+	protected void descending(TableType... columns) {
+		this.with(false, columns);
 	}
 
 	void build(QueryBuilder<TableType> builder) {

@@ -20,12 +20,16 @@ package at.pkgs.sql.query;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Collections;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 class TableDefinition<TableType> {
 
-	final Database.Table annotation;
+	private final Database.Table annotation;
 
-	final Map<TableType, ColumnDefinition<TableType>> columns;
+	private final Map<TableType, ColumnDefinition<TableType>> columns;
+
+	private final ConcurrentMap<Class<?>, TableMapper<TableType, ?>> mappers;
 
 	TableDefinition(Class<TableType> type) {
 		Map<TableType, ColumnDefinition<TableType>> columns;
@@ -35,30 +39,31 @@ class TableDefinition<TableType> {
 			throw new Database.Exception(
 					"table without Database.Table annotation: %s",
 					type.getName());
-		try {
-			this.getType().getConstructor();
-		}
-		catch (NoSuchMethodException throwable) {
-			throw new Database.Exception(
-					throwable,
-					"model type without default constructor: %s",
-					type.getName());
-		}
-		catch (SecurityException throwable) {
-			throw new Database.Exception(throwable);
-		}
 		columns = new LinkedHashMap<TableType, ColumnDefinition<TableType>>();
 		for (TableType key : type.getEnumConstants())
 			columns.put(key, new ColumnDefinition<TableType>(this, key));
 		this.columns = Collections.unmodifiableMap(columns);
+		this.mappers =
+				new ConcurrentHashMap<Class<?>, TableMapper<TableType, ?>>();
 	}
 
-	Class<?> getType() {
-		return this.annotation.type();
+	Map<TableType, ColumnDefinition<TableType>> getColumns() {
+		return this.columns;
 	}
 
-	ColumnDefinition<TableType> getColumn(TableType column) {
+	ColumnDefinition<TableType> getColumn(
+			TableType column) {
 		return this.columns.get(column);
+	}
+
+	@SuppressWarnings("unchecked")
+	<ModelType> TableMapper<TableType, ModelType> getMapper(
+			Class<ModelType> type) {
+		if (!this.mappers.containsKey(type))
+			this.mappers.putIfAbsent(
+					type,
+					new TableMapper<TableType, ModelType>(this, type));
+		return (TableMapper<TableType, ModelType>)this.mappers.get(type);
 	}
 
 }

@@ -19,7 +19,7 @@ package at.pkgs.sql.query;
 
 import java.util.Arrays;
 
-public class Expression<TableType> {
+public class Expression<TableType extends Enum<?>> {
 
 	private abstract class AbstractCriterion extends Criterion<TableType> {
 

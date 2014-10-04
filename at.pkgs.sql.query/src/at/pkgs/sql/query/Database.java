@@ -21,14 +21,21 @@ import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.sql.Types;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import javax.sql.DataSource;
 import at.pkgs.sql.query.dialect.Dialect;
 
 public class Database {
 
-	public static class Exception extends RuntimeException {
+	public static class Exception
+	extends RuntimeException {
 
 		private static final long serialVersionUID = 1L;
 
@@ -54,6 +61,40 @@ public class Database {
 
 	}
 
+	public enum Null {
+
+		BigDecimal(Types.NUMERIC),
+
+		Boolean(Types.BOOLEAN),
+
+		Byte(Types.TINYINT),
+
+		Bytes(Types.VARBINARY),
+
+		Date(Types.DATE),
+
+		Double(Types.DOUBLE),
+
+		Float(Types.FLOAT),
+
+		Integer(Types.INTEGER),
+
+		Long(Types.BIGINT),
+
+		String(Types.VARCHAR),
+
+		Time(Types.TIME),
+
+		Timestamp(Types.TIMESTAMP);
+
+		private final int type;
+
+		private Null(int type) {
+			this.type = type;
+		}
+
+	}
+
 	@Target(ElementType.TYPE)
 	@Retention(RetentionPolicy.RUNTIME)
 	public static @interface Table {
@@ -61,8 +102,6 @@ public class Database {
 		public String schema() default "";
 
 		public String name();
-
-		public Class<?> type();
 
 	}
 
@@ -74,7 +113,16 @@ public class Database {
 
 	}
 
-	public static abstract class And<TableType> extends Criteria<TableType> {
+	public static interface EnumValue<DatabaseType> {
+
+		public Class<DatabaseType> getDatabaseType();
+
+		public DatabaseType getDatabaseValue();
+
+	}
+
+	public static abstract class And<TableType extends Enum<?>>
+	extends Criteria<TableType> {
 
 		void appendJoint(QueryBuilder<TableType> builder) {
 			builder.append(" AND ");
@@ -82,7 +130,8 @@ public class Database {
 
 	}
 
-	public static abstract class Or<TableType> extends Criteria<TableType> {
+	public static abstract class Or<TableType extends Enum<?>>
+	extends Criteria<TableType> {
 
 		void appendJoint(QueryBuilder<TableType> builder) {
 			builder.append(" OR ");
@@ -96,6 +145,62 @@ public class Database {
 		// nothing
 
 	}
+
+	public static abstract class Query
+	<TableType extends Enum<?>, ModelType>
+	extends AbstractQuery<TableType> {
+
+		protected abstract class And extends Database.And<TableType> {
+
+			// nothing
+
+		}
+
+		protected abstract class Or extends Database.Or<TableType> {
+
+			// nothing
+
+		}
+
+		protected abstract class OrderBy extends Database.OrderBy<TableType> {
+
+			// nothing
+
+		}
+
+		private final Class<TableType> table;
+
+		private Database database;
+
+		protected Query(Class<TableType> table, Class<ModelType> model) {
+			this.table = table;
+		}
+
+		void prepare(Database database) {
+			this.database = database;
+		}
+
+		@Override
+		protected Database getDatabase() {
+			return this.database;
+		}
+
+		@Override
+		protected Class<TableType> getTableType() {
+			return this.table;
+		}
+
+	}
+
+	/*
+	public static abstract class ModelQuery
+	<TableType extends Enum<?>, ModelType>
+	extends AbstractQuery<TableType, ModelType> {
+
+		protected abstract ModelType define();
+
+	}
+	 */
 
 	private final Dialect dialect;
 
@@ -123,9 +228,129 @@ public class Database {
 		return (TableDefinition<TableType>)this.tables.get(type);
 	}
 
-	public <TableType extends Enum<?>> Query<TableType> query(
-			Class<TableType> type) {
-		return new Query<TableType>(this, this.getTable(type));
+	public Connection getConnection() {
+		try {
+			return this.source.getConnection();
+		}
+		catch (SQLException throwable) {
+			throw new Exception(throwable);
+		}
 	}
+
+	public <TableType extends Enum<?>>
+	at.pkgs.sql.query.Query<TableType> query(
+			Class<TableType> table) {
+		return new at.pkgs.sql.query.Query<TableType>(this, table);
+	}
+
+	public <TableType extends Enum<?>, ModelType>
+	Query<TableType, ModelType> query(
+			Query<TableType, ModelType> query) {
+		query.prepare(this);
+		return query;
+	}
+
+	PreparedStatement bindParameters(
+			PreparedStatement statement,
+			Iterable<Object> parameters) {
+		try {
+			int index;
+
+			index = 0;
+			for (Object parameter : parameters) {
+				if (parameter instanceof Null)
+					statement.setNull(++ index, ((Null)parameter).type);
+				else
+					statement.setObject(++ index, parameter);
+			}
+		}
+		catch (SQLException throwable) {
+			throw new Exception(throwable);
+		}
+		return statement;
+	}
+
+	public ResultSet executeResultSet(
+			Connection connection,
+			String query,
+			Iterable<Object> parameters) {
+		if (connection == null) connection = this.getConnection();
+		try {
+			return this.bindParameters(
+					connection.prepareStatement(query),
+					parameters).executeQuery();
+		}
+		catch (SQLException throwable) {
+			throw new Exception(throwable);
+		}
+	}
+
+	public ResultSet executeResultSet(
+			Connection connection,
+			String query,
+			Object... parameters) {
+		return this.executeResultSet(
+				connection,
+				query,
+				Arrays.asList(parameters));
+	}
+
+	public ResultSet executeResultSet(
+			String query,
+			Iterable<Object> parameters) {
+		return this.executeResultSet(
+				null,
+				query,
+				parameters);
+	}
+
+	public ResultSet executeResultSet(
+			String query,
+			Object... parameters) {
+		return this.executeResultSet(
+				null,
+				query,
+				Arrays.asList(parameters));
+	}
+
+	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
+			Connection connection,
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			String query,
+			Iterable<Object> parameters) {
+		ResultSet result;
+
+		result = this.executeResultSet(connection, query, parameters);
+		try {
+			TableMapper<TableType, ModelType> mapper;
+			int length;
+			ModelType model;
+
+			length = result.getMetaData().getColumnCount();
+			mapper = this.getTable(table).getMapper(type);
+			model = mapper.setValues(
+					null,
+					columns,
+					new ResultRowIterable(
+							result,
+							length));
+			return model;
+		}
+		catch (SQLException throwable) {
+			throw new Exception(throwable);
+		}
+		finally {
+			try {
+				result.close();
+			}
+			catch (SQLException throwable) {
+				throw new Exception(throwable);
+			}
+		}
+	}
+
+	//public <ModelType> List<ModelType> execute
 
 }

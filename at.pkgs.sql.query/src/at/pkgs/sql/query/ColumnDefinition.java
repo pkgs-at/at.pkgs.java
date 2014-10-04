@@ -22,18 +22,21 @@ import java.lang.reflect.Field;
 
 class ColumnDefinition<TableType> {
 
+	private final Enum<?> entry;
+
 	private final Database.Column annotation;
 
 	ColumnDefinition(
 			TableDefinition<TableType> table,
 			TableType column) {
-		final Enum<?> entry;
-		Database.Column annotation;
+		Class<?> type;
 		Field field;
+		Database.Column annotation;
 
-		entry = (Enum<?>)column;
+		this.entry = (Enum<?>)column;
+		type = this.entry.getDeclaringClass();
 		try {
-			field = entry.getDeclaringClass().getDeclaredField(entry.name());
+			field = type.getDeclaredField(this.entry.name());
 		}
 		catch (Exception throwable) {
 			throw new Database.Exception(throwable);
@@ -48,7 +51,7 @@ class ColumnDefinition<TableType> {
 
 			@Override
 			public String name() {
-				return entry.name();
+				return ColumnDefinition.this.getFieldName();
 			}
 
 		};
@@ -57,6 +60,10 @@ class ColumnDefinition<TableType> {
 
 	String getName() {
 		return this.annotation.name();
+	}
+
+	String getFieldName() {
+		return this.entry.name();
 	}
 
 }
