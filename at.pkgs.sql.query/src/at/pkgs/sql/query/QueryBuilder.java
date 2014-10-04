@@ -19,6 +19,7 @@ package at.pkgs.sql.query;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.io.PrintStream;
 import at.pkgs.sql.query.dialect.Dialect;
 
 public final class QueryBuilder<TableType> {
@@ -45,6 +46,12 @@ public final class QueryBuilder<TableType> {
 
 	List<Object> getParameters() {
 		return this.parameters;
+	}
+
+	public QueryBuilder<TableType> appendIdentifier(
+			String name) {
+		this.dialect.appendIdentifier(this.builder, name);
+		return this;
 	}
 
 	public QueryBuilder<TableType> append(
@@ -91,9 +98,7 @@ public final class QueryBuilder<TableType> {
 
 	public QueryBuilder<TableType> append(
 			TableType column) {
-		this.dialect.appendIdentifier(
-				this.builder,
-				this.table.getColumn(column).getName());
+		this.appendIdentifier(this.table.getColumn(column).getName());
 		return this;
 	}
 
@@ -126,7 +131,7 @@ public final class QueryBuilder<TableType> {
 	}
 
 	public QueryBuilder<TableType> appendTableName() {
-		this.dialect.appendIdentifier(this.builder, this.table.getName());
+		this.appendIdentifier(this.table.getName());
 		return this;
 	}
 
@@ -134,11 +139,18 @@ public final class QueryBuilder<TableType> {
 		String schema;
 
 		schema = this.table.getSchema();
-		if (schema != null) {
-			this.dialect.appendIdentifier(this.builder, schema);
-			this.append(".");
-		}
+		if (schema != null) this.appendIdentifier(schema).append('.');
 		return this.appendTableName();
+	}
+
+	public QueryBuilder<TableType> dump(PrintStream stream) {
+		stream.println(this.toString());
+		for (Object parameter : this.parameters) {
+			stream.print(parameter);
+			stream.print(", ");
+		}
+		stream.println("(EOL)");
+		return this;
 	}
 
 }

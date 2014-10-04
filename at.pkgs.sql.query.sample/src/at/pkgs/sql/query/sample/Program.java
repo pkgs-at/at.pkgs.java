@@ -1,7 +1,9 @@
 package at.pkgs.sql.query.sample;
 
+import java.sql.DriverManager;
+import java.sql.Connection;
 import at.pkgs.sql.query.Database;
-import at.pkgs.sql.query.dialect.SqlServerDialect;
+import at.pkgs.sql.query.dialect.DerbyDialect;
 
 public class Program {
 
@@ -14,10 +16,15 @@ public class Program {
 
 	}
 
-	public static void main(String[] arguments) {
+	public static void main(String[] arguments) throws Exception {
+		Connection connection;
 		Database database;
 
-		database = new Database(new SqlServerDialect(), null);
+		Class.forName(
+				"org.apache.derby.jdbc.EmbeddedDriver");
+		connection = DriverManager.getConnection(
+				"jdbc:derby:memory:test;create=true");
+		database = new Database(new DerbyDialect(), null);
 		System.out.println(
 				database.query(Preference.Table.class, Preference.class)
 						.buildSelectStatement());
@@ -76,6 +83,52 @@ public class Program {
 					distinct();
 					limit(1);
 				}}).buildSelectStatement());
+		database.executeAffectedRows(
+				connection,
+				database
+						.newQueryBuilder(Preference.Table.class)
+						.append("CREATE TABLE ")
+						.appendQualifiedTableName()
+						.append('(')
+						.append(Preference.Table.Key)
+						.append(" CHARACTER VARYING(255) NOT NULL")
+						.append(", ")
+						.append(Preference.Table.Value)
+						.append(" CHARACTER VARYING(4095) NOT NULL")
+						.append(", ")
+						.append(Preference.Table.CreatedAt)
+						.append(" TIMESTAMP NOT NULL")
+						.append(", ")
+						.append(Preference.Table.UpdatedAt)
+						.append(" TIMESTAMP NOT NULL")
+						.append(')')
+						.dump(System.out));
+		database.executeAffectedRows(
+				connection,
+				database
+						.newQueryBuilder(Preference.Table.class)
+						.append("INSERT INTO ")
+						.appendQualifiedTableName()
+						.append('(')
+						.append(Preference.Table.Key)
+						.append(", ")
+						.append(Preference.Table.Value)
+						.append(", ")
+						.append(Preference.Table.CreatedAt)
+						.append(", ")
+						.append(Preference.Table.UpdatedAt)
+						.append(')')
+						.append(
+								" VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+								"AAA",
+								"VVV")
+						.dump(System.out));
+		for (Preference model : database.query(new PreferenceQuery() {{
+			
+		}}).selectAll(connection)) {
+			System.out.println(model);
+		}
+		connection.close();
 	}
 
 }

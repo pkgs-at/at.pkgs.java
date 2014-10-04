@@ -30,6 +30,18 @@ public class Preference {
 
 	private Timestamp updatedAt;
 
+	@Override
+	public String toString() {
+		StringBuilder builder;
+
+		builder = new StringBuilder("[Preference]");
+		builder.append(" key: ").append(this.key);
+		builder.append(" value: ").append(this.value);
+		builder.append(" created_at: ").append(this.createdAt);
+		builder.append(" updated_at: ").append(this.updatedAt);
+		return builder.toString();
+	}
+
 	public String getKey() {
 		return key;
 	}

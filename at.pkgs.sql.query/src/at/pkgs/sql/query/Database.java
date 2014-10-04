@@ -244,6 +244,79 @@ public class Database {
 		return statement;
 	}
 
+	public int executeAffectedRows(
+			Connection connection,
+			String query,
+			Iterable<Object> parameters) {
+		boolean close;
+		PreparedStatement statement;
+
+		close = (connection == null);
+		statement = null;
+		if (connection == null) connection = this.getConnection();
+		try {
+			statement = connection.prepareStatement(query);
+			return this.bindParameters(statement, parameters).executeUpdate();
+		}
+		catch (SQLException throwable) {
+			throw new Exception(throwable);
+		}
+		finally {
+			try {
+				if (statement != null) statement.close();
+				if (close) connection.close();
+			}
+			catch (SQLException throwable) {
+				throw new Exception(throwable);
+			}
+		}
+	}
+
+	public int executeAffectedRows(
+			Connection connection,
+			String query,
+			Object... parameters) {
+		return this.executeAffectedRows(
+				connection,
+				query,
+				Arrays.asList(parameters));
+	}
+
+	public <TableType extends Enum<?>> int executeAffectedRows(
+			Connection connection,
+			QueryBuilder<TableType> builder) {
+		return this.executeAffectedRows(
+				connection,
+				builder.toString(),
+				builder.getParameters());
+	}
+
+	public int executeAffectedRows(
+			String query,
+			Iterable<Object> parameters) {
+		return this.executeAffectedRows(
+				null,
+				query,
+				parameters);
+	}
+
+	public int executeAffectedRows(
+			String query,
+			Object... parameters) {
+		return this.executeAffectedRows(
+				null,
+				query,
+				Arrays.asList(parameters));
+	}
+
+	public <TableType extends Enum<?>> int executeAffectedRows(
+			QueryBuilder<TableType> builder) {
+		return this.executeAffectedRows(
+				null,
+				builder.toString(),
+				builder.getParameters());
+	}
+
 	public ResultSet executeResultSet(
 			Connection connection,
 			String query,
@@ -312,8 +385,10 @@ public class Database {
 			ModelType model,
 			String query,
 			Iterable<Object> parameters) {
+		boolean close;
 		ResultSet result;
 
+		close = (connection == null);
 		result = this.executeResultSet(connection, query, parameters);
 		try {
 			TableMapper<TableType, ModelType> mapper;
@@ -333,7 +408,9 @@ public class Database {
 		}
 		finally {
 			try {
-				result.close();
+				connection = result.getStatement().getConnection();
+				result.getStatement().close();
+				if (close) connection.close();
 			}
 			catch (SQLException throwable) {
 				throw new Exception(throwable);
@@ -531,8 +608,10 @@ public class Database {
 			Iterable<TableType> columns,
 			String query,
 			Iterable<Object> parameters) {
+		boolean close;
 		ResultSet result;
 
+		close = (connection == null);
 		result = this.executeResultSet(connection, query, parameters);
 		try {
 			List<ModelType> list;
@@ -557,7 +636,9 @@ public class Database {
 		}
 		finally {
 			try {
-				result.close();
+				connection = result.getStatement().getConnection();
+				result.getStatement().close();
+				if (close) connection.close();
 			}
 			catch (SQLException throwable) {
 				throw new Exception(throwable);
