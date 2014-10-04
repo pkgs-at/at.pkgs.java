@@ -73,6 +73,8 @@ public class Program {
 						ascending(Preference.Table.CreatedAt);
 						descending(Preference.Table.UpdatedAt);
 					}});
+					distinct();
+					limit(1);
 				}}).buildSelectStatement());
 	}
 

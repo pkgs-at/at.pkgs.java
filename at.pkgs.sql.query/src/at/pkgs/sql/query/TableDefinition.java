@@ -47,6 +47,17 @@ class TableDefinition<TableType> {
 				new ConcurrentHashMap<Class<?>, TableMapper<TableType, ?>>();
 	}
 
+	String getSchema() {
+		String value;
+
+		value = this.annotation.schema();
+		return (value == null || value.length() <= 0) ? null : value;
+	}
+
+	String getName() {
+		return this.annotation.name();
+	}
+
 	Map<TableType, ColumnDefinition<TableType>> getColumns() {
 		return this.columns;
 	}

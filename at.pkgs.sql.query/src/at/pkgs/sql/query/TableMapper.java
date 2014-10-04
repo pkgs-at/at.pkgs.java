@@ -21,7 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Collections;
 
 class TableMapper<TableType, ModelType> {
@@ -49,10 +49,11 @@ class TableMapper<TableType, ModelType> {
 		}
 		this.table = table;
 		this.type = type;
-		columns = new HashMap<TableType, ColumnMapper<TableType, ModelType>>();
+		columns =
+				new LinkedHashMap
+				<TableType, ColumnMapper<TableType, ModelType>>();
 		for (TableType column : this.table.getColumns().keySet()) {
 			ColumnMapper<TableType, ModelType> mapper;
-
 			mapper = new ColumnMapper<TableType, ModelType>(
 					this,
 					this.table.getColumn(column));
@@ -63,6 +64,10 @@ class TableMapper<TableType, ModelType> {
 
 	Class<ModelType> getType() {
 		return this.type;
+	}
+
+	Map<TableType, ColumnMapper<TableType, ModelType>> getColumns() {
+		return this.columns;
 	}
 
 	ModelType setValues(

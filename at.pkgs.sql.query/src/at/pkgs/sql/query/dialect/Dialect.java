@@ -17,8 +17,64 @@
 
 package at.pkgs.sql.query.dialect;
 
+import at.pkgs.sql.query.QueryBuilder;
+
 public interface Dialect {
 
+	public static abstract class SelectVisitor<TableType> {
+
+		protected QueryBuilder<TableType> builder;
+
+		protected int offset;
+
+		protected int limit;
+
+		protected void initialize() {
+			// do nothing
+		}
+
+		public void initialize(
+				QueryBuilder<TableType> builder,
+				int offset,
+				int limit) {
+			this.builder = builder;
+			this.offset = offset;
+			this.limit = limit;
+			this.initialize();
+		}
+
+		public boolean select() {
+			return false;
+		}
+
+		public boolean allOrDistinct() {
+			return false;
+		}
+
+		public boolean selectList() {
+			return false;
+		}
+
+		public boolean from() {
+			return false;
+		}
+
+		public boolean where() {
+			return false;
+		}
+
+		public boolean orderBy() {
+			return false;
+		}
+
+		public void afterAll() {
+			// do nothing
+		}
+
+	}
+
 	public void appendIdentifier(StringBuilder builder, String name);
+
+	public <TableType> SelectVisitor<TableType> newSelectVisitor();
 
 }

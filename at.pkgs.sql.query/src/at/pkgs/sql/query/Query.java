@@ -17,6 +17,9 @@
 
 package at.pkgs.sql.query;
 
+import java.util.Arrays;
+import at.pkgs.sql.query.dialect.Dialect;
+
 public abstract class Query<TableType extends Enum<?>, ModelType>
 implements Criterion.Parent<TableType, ModelType> {
 
@@ -45,19 +48,49 @@ implements Criterion.Parent<TableType, ModelType> {
 
 	private final Class<ModelType> model;
 
+	private boolean distinct;
+
+	private Iterable<TableType> columns;
+
 	private Criterion<TableType, ModelType> where;
 
 	private Database.OrderBy<TableType> order;
+
+	private int offset;
+
+	private int limit;
 
 	private Database database;
 
 	protected Query(Class<TableType> table, Class<ModelType> model) {
 		this.table = table;
 		this.model = model;
+		this.distinct = false;
+		this.columns = null;
+		this.where = null;
+		this.order = null;
+		this.offset = (-1);
+		this.limit = (-1);
 	}
 
 	void prepare(Database database) {
 		this.database = database;
+	}
+
+	protected Query<TableType, ModelType> distinct() {
+		this.distinct = true;
+		return this;
+	}
+
+	protected Query<TableType, ModelType> columns(
+			Iterable<TableType> columns) {
+		this.columns = columns;
+		return this;
+	}
+
+	protected Query<TableType, ModelType> columns(
+			TableType... columns) {
+		return this.columns(Arrays.asList(columns));
 	}
 
 	Query<TableType, ModelType> where(
@@ -104,6 +137,43 @@ implements Criterion.Parent<TableType, ModelType> {
 		return this.orderBy(false, columns);
 	}
 
+	public Query<TableType, ModelType> limit(int value) {
+		this.limit = value;
+		return this;
+	}
+
+	public Query<TableType, ModelType> offset(int value) {
+		this.offset = value;
+		return this;
+	}
+
+	public Query<TableType, ModelType> offset(int offset, int limit) {
+		this.offset = offset;
+		this.limit = limit;
+		return this;
+	}
+
+	public Query<TableType, ModelType> page(int size, int index) {
+		this.offset = size * index;
+		this.limit = size;
+		return this;
+	}
+
+	void buildSelectListClause(QueryBuilder<TableType> builder) {
+		boolean first;
+
+		first = true;
+		for (TableType colmun : this.columns) {
+			if (first) first = false;
+			else builder.append(',');
+			builder.append(' ').append(colmun);
+		}
+	}
+
+	void buildFromClause(QueryBuilder<TableType> builder) {
+		builder.append(" FROM ").appendQualifiedTableName();
+	}
+
 	void buildWhereClause(QueryBuilder<TableType> builder) {
 		if (this.where == null) return;
 		this.where.build(builder, true);
@@ -114,19 +184,51 @@ implements Criterion.Parent<TableType, ModelType> {
 		this.order.build(builder);
 	}
 
-	protected QueryBuilder<TableType> newQueryBuilder() {
-		return new QueryBuilder<TableType>(
-				this.database.getDialect(),
-				this.database.getTable(this.table));
+	QueryBuilder<TableType> buildSelectQuery() {
+		QueryBuilder<TableType> builder;
+		Dialect.SelectVisitor<TableType> visitor;
+
+		if (this.columns == null) {
+			TableMapper<TableType, ModelType> mapper;
+
+			mapper = this.database.getTable(this.table).getMapper(this.model);
+			this.columns = mapper.getColumns().keySet();
+		}
+		builder = this.database.newQueryBuilder(this.table);
+		visitor = this.database.getDialect().newSelectVisitor();
+		visitor.initialize(builder, this.offset, this.limit);
+		if (!visitor.select())
+			builder.append("SELECT");
+		if (!visitor.allOrDistinct())
+			builder.append(this.distinct ? " DISTINCT" : " ALL");
+		if (!visitor.selectList())
+			this.buildSelectListClause(builder);
+		if (!visitor.from())
+			this.buildFromClause(builder);
+		if (!visitor.where())
+			this.buildWhereClause(builder);
+		if (!visitor.orderBy())
+			this.buildOrderByClause(builder);
+		visitor.afterAll();
+		return builder;
 	}
 
 	public String buildSelectStatement() {
+		return this.buildSelectQuery().toString();
+	}
+
+	public ModelType selectOne() {
 		QueryBuilder<TableType> builder;
 
-		builder = this.newQueryBuilder();
-		this.buildWhereClause(builder);
-		this.buildOrderByClause(builder);
-		return builder.toString();
+		this.limit(1);
+		builder = this.buildSelectQuery();
+		return this.database.executeModel(
+				null,
+				this.table,
+				this.model,
+				this.columns,
+				builder.toString(),
+				builder.getParameters());
 	}
 
 }

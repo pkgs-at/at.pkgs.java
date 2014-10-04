@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.ArrayList;
 import at.pkgs.sql.query.dialect.Dialect;
 
-final class QueryBuilder<TableType> {
+public final class QueryBuilder<TableType> {
 
 	private final Dialect dialect;
 
@@ -43,33 +43,37 @@ final class QueryBuilder<TableType> {
 		return this.builder.toString();
 	}
 
-	QueryBuilder<TableType> append(
+	List<Object> getParameters() {
+		return this.parameters;
+	}
+
+	public QueryBuilder<TableType> append(
 			Iterable<Object> parameters) {
 		for (Object parameter : parameters)
 			this.parameters.add(parameter);
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			Object... parameters) {
 		for (Object parameter : parameters)
 			this.parameters.add(parameter);
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			char value) {
 		this.builder.append(value);
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			String value) {
 		this.builder.append(value);
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			String query,
 			Iterable<Object> parameters) {
 		this.append(query);
@@ -77,7 +81,7 @@ final class QueryBuilder<TableType> {
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			String query,
 			Object... parameters) {
 		this.append(query);
@@ -85,7 +89,7 @@ final class QueryBuilder<TableType> {
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			TableType column) {
 		this.dialect.appendIdentifier(
 				this.builder,
@@ -93,7 +97,7 @@ final class QueryBuilder<TableType> {
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			TableType column,
 			String query) {
 		this.append(column);
@@ -101,7 +105,7 @@ final class QueryBuilder<TableType> {
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			TableType column,
 			String query,
 			Iterable<Object> parameters) {
@@ -111,7 +115,7 @@ final class QueryBuilder<TableType> {
 		return this;
 	}
 
-	QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> append(
 			TableType column,
 			String query,
 			Object... parameters) {
@@ -119,6 +123,22 @@ final class QueryBuilder<TableType> {
 		this.append(query);
 		this.append(parameters);
 		return this;
+	}
+
+	public QueryBuilder<TableType> appendTableName() {
+		this.dialect.appendIdentifier(this.builder, this.table.getName());
+		return this;
+	}
+
+	public QueryBuilder<TableType> appendQualifiedTableName() {
+		String schema;
+
+		schema = this.table.getSchema();
+		if (schema != null) {
+			this.dialect.appendIdentifier(this.builder, schema);
+			this.append(".");
+		}
+		return this.appendTableName();
 	}
 
 }

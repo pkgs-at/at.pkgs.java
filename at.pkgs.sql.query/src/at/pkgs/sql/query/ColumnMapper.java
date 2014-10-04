@@ -43,6 +43,7 @@ class ColumnMapper<TableType, ModelType> {
 	ColumnMapper(
 			TableMapper<TableType, ModelType> table,
 			ColumnDefinition<TableType> column) {
+		Class<?> target;
 		Class<?> type;
 		Field field;
 		String name;
@@ -51,10 +52,14 @@ class ColumnMapper<TableType, ModelType> {
 		this.column = column;
 		name = this.column.getFieldName().toUpperCase();
 		field = null;
-		for (Field candidate : this.table.getType().getFields()) {
-			if (!candidate.getName().toUpperCase().equals(name)) continue;
-			field  = candidate;
-			break;
+		target = this.table.getType();
+		while (field == null && target != null) {
+			for (Field candidate : target.getDeclaredFields()) {
+				if (!candidate.getName().toUpperCase().equals(name)) continue;
+				field  = candidate;
+				break;
+			}
+			target = target.getSuperclass();
 		}
 		if (field == null) {
 			this.field = null;

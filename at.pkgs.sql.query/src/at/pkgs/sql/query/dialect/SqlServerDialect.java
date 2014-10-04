@@ -17,6 +17,8 @@
 
 package at.pkgs.sql.query.dialect;
 
+import at.pkgs.sql.query.Database;
+
 public class SqlServerDialect extends AbstractDialect {
 
 	@Override
@@ -27,6 +29,27 @@ public class SqlServerDialect extends AbstractDialect {
 	@Override
 	protected char getIdentifierCloseCharactor() {
 		return ']';
+	}
+
+	@Override
+	public <TableType> SelectVisitor<TableType> newSelectVisitor() {
+		return new SelectVisitor<TableType>() {
+
+			@Override
+			protected void initialize() {
+				if (this.offset > 0)
+					throw new Database.Exception(
+							"SqlServerDialect not support offset");
+			}
+
+			@Override
+			public boolean selectList() {
+				if (this.limit > 0)
+					this.builder.append(" TOP(?)", this.limit);
+				return false;
+			}
+
+		};
 	}
 
 }
