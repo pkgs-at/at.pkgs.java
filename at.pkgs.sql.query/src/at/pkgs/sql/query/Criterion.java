@@ -29,8 +29,8 @@ public abstract class Criterion<TableType extends Enum<?>, ModelType> {
 
 	Criterion(Parent<TableType, ModelType> parent) {
 		this.parent = parent;
-		if (parent instanceof AbstractQuery)
-			((AbstractQuery<TableType, ModelType>)parent).where(this);
+		if (parent instanceof Query)
+			((Query<TableType, ModelType>)parent).where(this);
 		if (parent instanceof Criteria)
 			((Criteria<TableType, ModelType>)parent).add(this);
 	}

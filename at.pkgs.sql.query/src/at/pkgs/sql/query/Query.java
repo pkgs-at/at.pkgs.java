@@ -17,34 +17,116 @@
 
 package at.pkgs.sql.query;
 
-public class Query<TableType extends Enum<?>, ModelType>
-extends AbstractQuery<TableType, ModelType> {
+public abstract class Query<TableType extends Enum<?>, ModelType>
+implements Criterion.Parent<TableType, ModelType> {
 
-	private final Database database;
+	protected abstract class And
+	extends Database.And<TableType, ModelType> {
+
+		// nothing
+
+	}
+
+	protected abstract class Or
+	extends Database.Or<TableType, ModelType> {
+
+		// nothing
+
+	}
+
+	protected abstract class OrderBy
+	extends Database.OrderBy<TableType> {
+
+		// nothing
+
+	}
 
 	private final Class<TableType> table;
 
 	private final Class<ModelType> model;
 
-	Query(Database database, Class<TableType> table, Class<ModelType> model) {
-		this.database = database;
+	private Criterion<TableType, ModelType> where;
+
+	private Database.OrderBy<TableType> order;
+
+	private Database database;
+
+	protected Query(Class<TableType> table, Class<ModelType> model) {
 		this.table = table;
 		this.model = model;
 	}
 
-	@Override
-	protected Database getDatabase() {
-		return this.database;
+	void prepare(Database database) {
+		this.database = database;
 	}
 
-	@Override
-	protected Class<TableType> getTableType() {
-		return this.table;
+	Query<TableType, ModelType> where(
+			Criterion<TableType, ModelType> criterion) {
+		this.where = criterion;
+		return this;
 	}
 
-	@Override
-	protected Class<ModelType> getModelType() {
-		return this.model;
+	public Query<TableType, ModelType> where(
+			Criteria<TableType, ModelType> criterion) {
+		return this.where((Criterion<TableType, ModelType>)criterion);
+	}
+
+	public Expression<TableType, ModelType> where(TableType column) {
+		return new Expression<TableType, ModelType>(this, column);
+	}
+
+	public Query<TableType, ModelType> sort(
+			Database.OrderBy<TableType> order) {
+		this.order = order;
+		return this;
+	}
+
+	public Query<TableType, ModelType> orderBy(
+			boolean ascending, TableType... columns) {
+		if (this.order == null) {
+			this.order = new Database.OrderBy<TableType>() {
+
+				// nothing
+
+			};
+		}
+		this.order.with(ascending, columns);
+		return this;
+	}
+
+	public Query<TableType, ModelType> orderByAscending(
+			TableType... columns) {
+		return this.orderBy(true, columns);
+	}
+
+	public Query<TableType, ModelType> orderByDescending(
+			TableType... columns) {
+		return this.orderBy(false, columns);
+	}
+
+	void buildWhereClause(QueryBuilder<TableType> builder) {
+		if (this.where == null) return;
+		this.where.build(builder, true);
+	}
+
+	void buildOrderByClause(QueryBuilder<TableType> builder) {
+		if (this.order == null) return;
+		this.order.build(builder);
+	}
+
+	protected QueryBuilder<TableType> newQueryBuilder() {
+		return new QueryBuilder<TableType>(
+				this.database.getDialect(),
+				this.database.getTable(this.table));
+	}
+
+	public String buildSelectStatement() {
+		QueryBuilder<TableType> builder;
+
+		builder = this.newQueryBuilder();
+		this.buildWhereClause(builder);
+		this.buildOrderByClause(builder);
+		return builder.toString();
 	}
 
 }

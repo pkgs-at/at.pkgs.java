@@ -146,59 +146,13 @@ public class Database {
 
 	}
 
-	public static abstract class Query
-	<TableType extends Enum<?>, ModelType>
-	extends AbstractQuery<TableType, ModelType> {
+	public static abstract class Query <TableType extends Enum<?>, ModelType>
+	extends at.pkgs.sql.query.Query<TableType, ModelType> {
 
-		protected abstract class And
-		extends Database.And<TableType, ModelType> {
-
-			// nothing
-
-		}
-
-		protected abstract class Or
-		extends Database.Or<TableType, ModelType> {
-
-			// nothing
-
-		}
-
-		protected abstract class OrderBy
-		extends Database.OrderBy<TableType> {
-
-			// nothing
-
-		}
-
-		private final Class<TableType> table;
-
-		private final Class<ModelType> model;
-
-		private Database database;
-
-		protected Query(Class<TableType> table, Class<ModelType> model) {
-			this.table = table;
-			this.model = model;
-		}
-
-		void prepare(Database database) {
-			this.database = database;
-		}
-
-		@Override
-		protected Database getDatabase() {
-			return this.database;
-		}
-
-		@Override
-		protected Class<TableType> getTableType() {
-			return this.table;
-		}
-
-		@Override
-		protected Class<ModelType> getModelType() {
-			return this.model;
+		protected Query(
+				Class<TableType> table,
+				Class<ModelType> model) {
+			super(table, model);
 		}
 
 	}
@@ -239,13 +193,12 @@ public class Database {
 	}
 
 	public <TableType extends Enum<?>, ModelType>
-	at.pkgs.sql.query.Query<TableType, ModelType> query(
+	Query<TableType, ModelType> query(
 			Class<TableType> table,
 			Class<ModelType> model) {
-		return new at.pkgs.sql.query.Query<TableType, ModelType>(
-				this,
-				table,
-				model);
+		return new Query<TableType, ModelType>(table, model) {{
+			this.prepare(Database.this);
+		}};
 	}
 
 	public <TableType extends Enum<?>, ModelType>
