@@ -19,6 +19,8 @@ package at.pkgs.web.duet;
 
 import java.io.File;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.CompositeConfiguration;
+import org.apache.commons.configuration.SystemConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 
@@ -26,14 +28,47 @@ public class ConfigurationManager extends AbstractManager {
 
 	private final File configurationDirectory;
 
-	private final PropertiesConfiguration configuration;
+	private final CompositeConfiguration configuration;
 
 	public ConfigurationManager(AbstractApplication application) {
 		super(application);
 		this.configurationDirectory = this.getConfigurationParameter();
-		this.configuration = new PropertiesConfiguration();
-		this.load("application.properties");
-		this.load("application.local.properties");
+		this.configuration = new CompositeConfiguration();
+		{
+			File file;
+
+			file = this.getConfigurationFile("application.local.properties");
+			if (file.exists()) {
+				try {
+					this.configuration.addConfiguration(
+							new PropertiesConfiguration(file));
+				}
+				catch (ConfigurationException throwable) {
+					this.error(
+							throwable,
+							"failed on load configuration from %s",
+							file);
+					throw new RuntimeException(throwable);
+				}
+			}
+		}
+		{
+			File file;
+
+			file = this.getConfigurationFile("application.properties");
+			try {
+				this.configuration.addConfiguration(
+						new PropertiesConfiguration(file));
+			}
+			catch (ConfigurationException throwable) {
+				this.error(
+						throwable,
+						"failed on load configuration from %s",
+						file);
+				throw new RuntimeException(throwable);
+			}
+		}
+		this.configuration.addConfiguration(new SystemConfiguration());
 	}
 
 	protected File getConfigurationParameter() {
@@ -61,23 +96,6 @@ public class ConfigurationManager extends AbstractManager {
 
 	public File getConfigurationFile(String name) {
 		return new File(this.getConfigurationDirectory(), name);
-	}
-
-	protected void load(String name) {
-		File file;
-
-		file = this.getConfigurationFile(name);
-		if (!file.exists()) return;
-		try {
-			this.configuration.load(file);
-		}
-		catch (ConfigurationException throwable) {
-			this.error(
-					throwable,
-					"failed on load configuration from %s",
-					file);
-			throw new RuntimeException(throwable);
-		}
 	}
 
 	public Configuration get(String prefix) {
