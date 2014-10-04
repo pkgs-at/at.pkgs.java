@@ -17,7 +17,9 @@
 
 package at.pkgs.sql.query;
 
+import java.util.List;
 import java.util.Arrays;
+import java.sql.Connection;
 import at.pkgs.sql.query.dialect.Dialect;
 
 public abstract class Query<TableType extends Enum<?>, ModelType>
@@ -217,18 +219,30 @@ implements Criterion.Parent<TableType, ModelType> {
 		return this.buildSelectQuery().toString();
 	}
 
-	public ModelType selectOne() {
-		QueryBuilder<TableType> builder;
-
-		this.limit(1);
-		builder = this.buildSelectQuery();
+	public ModelType selectOne(Connection connection) {
 		return this.database.executeModel(
-				null,
+				connection,
 				this.table,
 				this.model,
 				this.columns,
-				builder.toString(),
-				builder.getParameters());
+				this.limit(1).buildSelectQuery());
+	}
+
+	public ModelType selectOne() {
+		return this.selectOne(null);
+	}
+
+	public List<ModelType> selectAll(Connection connection) {
+		return this.database.executeModelList(
+				connection,
+				this.table,
+				this.model,
+				this.columns,
+				this.buildSelectQuery());
+	}
+
+	public List<ModelType> selectAll() {
+		return this.selectAll(null);
 	}
 
 }

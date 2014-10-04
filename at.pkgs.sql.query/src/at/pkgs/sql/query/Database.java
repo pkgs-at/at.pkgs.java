@@ -21,6 +21,8 @@ import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -307,6 +309,7 @@ public class Database {
 			Class<TableType> table,
 			Class<ModelType> type,
 			Iterable<TableType> columns,
+			ModelType model,
 			String query,
 			Iterable<Object> parameters) {
 		ResultSet result;
@@ -315,18 +318,15 @@ public class Database {
 		try {
 			TableMapper<TableType, ModelType> mapper;
 			int length;
-			ModelType model;
-
 			if (!result.next()) return null;
 			length = result.getMetaData().getColumnCount();
 			mapper = this.getTable(table).getMapper(type);
-			model = mapper.setValues(
-					null,
+			return mapper.setValues(
+					model,
 					columns,
 					new ResultRowIterable(
 							result,
 							length));
-			return model;
 		}
 		catch (SQLException throwable) {
 			throw new Exception(throwable);
@@ -347,14 +347,67 @@ public class Database {
 			Class<ModelType> type,
 			Iterable<TableType> columns,
 			String query,
+			Iterable<Object> parameters) {
+		return this.executeModel(
+				connection,
+				table,
+				type,
+				columns,
+				null,
+				query,
+				parameters);
+	}
+
+	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
+			Connection connection,
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			ModelType model,
+			String query,
 			Object... parameters) {
 		return this.executeModel(
 				connection,
 				table,
 				type,
 				columns,
+				model,
 				query,
 				Arrays.asList(parameters));
+	}
+
+	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
+			Connection connection,
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			String query,
+			Object... parameters) {
+		return this.executeModel(
+				connection,
+				table,
+				type,
+				columns,
+				null,
+				query,
+				Arrays.asList(parameters));
+	}
+
+	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
+			Connection connection,
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			ModelType model,
+			QueryBuilder<TableType> builder) {
+		return this.executeModel(
+				connection,
+				table,
+				type,
+				columns,
+				model,
+				builder.toString(),
+				builder.getParameters());
 	}
 
 	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
@@ -368,8 +421,26 @@ public class Database {
 				table,
 				type,
 				columns,
+				null,
 				builder.toString(),
 				builder.getParameters());
+	}
+
+	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			ModelType model,
+			String query,
+			Iterable<Object> parameters) {
+		return this.executeModel(
+				null,
+				table,
+				type,
+				columns,
+				model,
+				query,
+				parameters);
 	}
 
 	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
@@ -383,8 +454,26 @@ public class Database {
 				table,
 				type,
 				columns,
+				null,
 				query,
 				parameters);
+	}
+
+	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			ModelType model,
+			String query,
+			Object... parameters) {
+		return this.executeModel(
+				null,
+				table,
+				type,
+				columns,
+				model,
+				query,
+				Arrays.asList(parameters));
 	}
 
 	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
@@ -398,8 +487,25 @@ public class Database {
 				table,
 				type,
 				columns,
+				null,
 				query,
 				Arrays.asList(parameters));
+	}
+
+	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			ModelType model,
+			QueryBuilder<TableType> builder) {
+		return this.executeModel(
+				null,
+				table,
+				type,
+				columns,
+				model,
+				builder.toString(),
+				builder.getParameters());
 	}
 
 	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
@@ -412,10 +518,131 @@ public class Database {
 				table,
 				type,
 				columns,
+				null,
 				builder.toString(),
 				builder.getParameters());
 	}
 
-	//public <ModelType> List<ModelType> execute
+	public <TableType extends Enum<?>, ModelType>
+	List<ModelType> executeModelList(
+			Connection connection,
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			String query,
+			Iterable<Object> parameters) {
+		ResultSet result;
+
+		result = this.executeResultSet(connection, query, parameters);
+		try {
+			List<ModelType> list;
+			TableMapper<TableType, ModelType> mapper;
+			int length;
+
+			list = new ArrayList<ModelType>();
+			length = result.getMetaData().getColumnCount();
+			mapper = this.getTable(table).getMapper(type);
+			while (result.next())
+				list.add(
+						mapper.setValues(
+								null,
+								columns,
+								new ResultRowIterable(
+										result,
+										length)));
+			return list;
+		}
+		catch (SQLException throwable) {
+			throw new Exception(throwable);
+		}
+		finally {
+			try {
+				result.close();
+			}
+			catch (SQLException throwable) {
+				throw new Exception(throwable);
+			}
+		}
+	}
+
+	public <TableType extends Enum<?>, ModelType>
+	List<ModelType> executeModelList(
+			Connection connection,
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			String query,
+			Object... parameters) {
+		return this.executeModelList(
+				connection,
+				table,
+				type,
+				columns,
+				query,
+				Arrays.asList(parameters));
+	}
+
+	public <TableType extends Enum<?>, ModelType>
+	List<ModelType> executeModelList(
+			Connection connection,
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			QueryBuilder<TableType> builder) {
+		return this.executeModelList(
+				connection,
+				table,
+				type,
+				columns,
+				builder.toString(),
+				builder.getParameters());
+	}
+
+	public <TableType extends Enum<?>, ModelType>
+	List<ModelType> executeModelList(
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			String query,
+			Iterable<Object> parameters) {
+		return this.executeModelList(
+				null,
+				table,
+				type,
+				columns,
+				query,
+				parameters);
+	}
+
+	public <TableType extends Enum<?>, ModelType>
+	List<ModelType> executeModelList(
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			String query,
+			Object... parameters) {
+		return this.executeModelList(
+				null,
+				table,
+				type,
+				columns,
+				query,
+				Arrays.asList(parameters));
+	}
+
+	public <TableType extends Enum<?>, ModelType>
+	List<ModelType> executeModelList(
+			Class<TableType> table,
+			Class<ModelType> type,
+			Iterable<TableType> columns,
+			QueryBuilder<TableType> builder) {
+		return this.executeModelList(
+				null,
+				table,
+				type,
+				columns,
+				builder.toString(),
+				builder.getParameters());
+	}
 
 }
