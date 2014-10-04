@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 public class Expression<TableType> {
 
-	abstract class AbstractCriterion extends Criterion<TableType> {
+	private abstract class AbstractCriterion extends Criterion<TableType> {
 
 		protected abstract void build(QueryBuilder<TableType> builder);
 

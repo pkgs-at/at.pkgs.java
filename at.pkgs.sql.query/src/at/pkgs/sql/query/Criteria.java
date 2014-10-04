@@ -20,7 +20,7 @@ package at.pkgs.sql.query;
 import java.util.List;
 import java.util.ArrayList;
 
-public abstract class Criteria<TableType>
+abstract class Criteria<TableType>
 extends Criterion<TableType>
 implements Criterion.Parent<TableType> {
 

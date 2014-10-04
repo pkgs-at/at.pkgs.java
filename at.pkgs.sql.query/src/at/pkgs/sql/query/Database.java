@@ -21,8 +21,6 @@ import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
@@ -92,71 +90,10 @@ public class Database {
 
 	}
 
-	public static abstract class OrderBy<TableType> {
+	public static abstract class OrderBy<TableType>
+	extends OrderByClause<TableType> {
 
-		enum Direction {
-
-			ASCENDING("ASC"),
-
-			DESCENDING("DESC");
-
-			private final String text;
-
-			private Direction(String text) {
-				this.text = text;
-			}
-
-		}
-
-		class Entry {
-
-			private TableType column;
-
-			private Direction direction;
-
-			private Entry(TableType column, Direction direction) {
-				this.column = column;
-				this.direction = direction;
-			}
-
-			void build(QueryBuilder<TableType> builder) {
-				builder.append(this.column);
-				builder.append(' ');
-				builder.append(this.direction.text);
-			}
-
-		}
-
-		private final List<Entry> list;
-
-		public OrderBy() {
-			this.list = new ArrayList<Entry>();
-		}
-
-		protected void ascending(TableType column) {
-			this.list.add(new Entry(column, Direction.ASCENDING));
-		}
-
-		protected void descending(TableType column) {
-			this.list.add(new Entry(column, Direction.DESCENDING));
-		}
-
-		void build(QueryBuilder<TableType> builder) {
-			boolean first;
-
-			if (this.list.size() <= 0) return;
-			first = true;
-			for (Entry entry : this.list) {
-				if (first) {
-					first = false;
-					builder.append(" ORDER BY ");
-				}
-				else {
-					builder.append(", ");
-				}
-				entry.build(builder);
-			}
-		}
+		// nothing
 
 	}
 
