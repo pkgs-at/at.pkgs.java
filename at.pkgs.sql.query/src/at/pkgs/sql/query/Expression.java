@@ -59,7 +59,7 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				builder.append(
+				builder.column(
 						Expression.this.column,
 						" IS NULL");
 			}
@@ -72,7 +72,7 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				builder.append(
+				builder.column(
 						Expression.this.column,
 						" IS NOT NULL");
 			}
@@ -91,7 +91,7 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				builder.append(
+				builder.column(
 						Expression.this.column,
 						" = ?",
 						value);
@@ -111,7 +111,7 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				builder.append(
+				builder.column(
 						Expression.this.column,
 						" <> ?",
 						value);
@@ -127,7 +127,7 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				builder.append(
+				builder.column(
 						Expression.this.column,
 						" BETWEEN ? AND ?",
 						left,
@@ -144,7 +144,7 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				builder.append(
+				builder.column(
 						Expression.this.column,
 						" NOT BETWEEN ? AND ?",
 						left,
@@ -165,23 +165,10 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				boolean first;
-
-				first = true;
-				for (Object value : values) {
-					if (first) {
-						first = false;
-						builder.append(
-								Expression.this.column,
-								" IN(?",
-								value);
-					}
-					else {
-						builder.append(
-								", ?",
-								value);
-					}
-				}
+				builder.column(
+						Expression.this.column,
+						" IN(");
+				builder.append(null, values);
 				builder.append(")");
 			}
 
@@ -204,23 +191,10 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				boolean first;
-
-				first = true;
-				for (Object value : values) {
-					if (first) {
-						first = false;
-						builder.append(
-								Expression.this.column,
-								" NOT IN(?",
-								value);
-					}
-					else {
-						builder.append(
-								", ?",
-								value);
-					}
-				}
+				builder.column(
+						Expression.this.column,
+						" NOT IN(");
+				builder.append(null, values);
 				builder.append(")");
 			}
 

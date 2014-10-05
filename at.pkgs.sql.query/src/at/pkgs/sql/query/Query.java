@@ -161,31 +161,6 @@ implements Criterion.Parent<TableType, ModelType> {
 		return this;
 	}
 
-	void buildSelectListClause(QueryBuilder<TableType> builder) {
-		boolean first;
-
-		first = true;
-		for (TableType colmun : this.columns) {
-			if (first) first = false;
-			else builder.append(',');
-			builder.append(' ').append(colmun);
-		}
-	}
-
-	void buildFromClause(QueryBuilder<TableType> builder) {
-		builder.append(" FROM ").appendQualifiedTableName();
-	}
-
-	void buildWhereClause(QueryBuilder<TableType> builder) {
-		if (this.where == null) return;
-		this.where.build(builder, true);
-	}
-
-	void buildOrderByClause(QueryBuilder<TableType> builder) {
-		if (this.order == null) return;
-		this.order.build(builder);
-	}
-
 	QueryBuilder<TableType> buildSelectQuery() {
 		QueryBuilder<TableType> builder;
 		Dialect.SelectVisitor<TableType> visitor;
@@ -204,13 +179,13 @@ implements Criterion.Parent<TableType, ModelType> {
 		if (!visitor.allOrDistinct())
 			builder.append(this.distinct ? " DISTINCT" : " ALL");
 		if (!visitor.selectList())
-			this.buildSelectListClause(builder);
+			builder.append(' ').columns(this.columns);
 		if (!visitor.from())
-			this.buildFromClause(builder);
-		if (!visitor.where())
-			this.buildWhereClause(builder);
-		if (!visitor.orderBy())
-			this.buildOrderByClause(builder);
+			builder.append(" FROM ").qualifiedTableName();
+		if (!visitor.where() && this.where != null)
+			this.where.build(builder, true);
+		if (!visitor.orderBy() && this.order != null)
+			this.order.build(builder);
 		visitor.afterAll();
 		return builder;
 	}

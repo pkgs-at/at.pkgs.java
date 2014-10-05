@@ -63,20 +63,26 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 		return this.parameters;
 	}
 
-	public QueryBuilder<TableType> appendIdentifier(
+	public QueryBuilder<TableType> identifier(
 			String name) {
 		this.dialect.appendIdentifier(this.builder, name);
 		return this;
 	}
 
-	public QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> parameter(
+			Object parameter) {
+		this.parameters.add(parameter);
+		return this;
+	}
+
+	public QueryBuilder<TableType> parameters(
 			Iterable<Object> parameters) {
 		for (Object parameter : parameters)
 			this.parameters.add(parameter);
 		return this;
 	}
 
-	public QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> parameters(
 			Object... parameters) {
 		for (Object parameter : parameters)
 			this.parameters.add(parameter);
@@ -97,65 +103,141 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 
 	public QueryBuilder<TableType> append(
 			String query,
+			Object parameter) {
+		if (query != null) {
+			this.append(query);
+			this.parameter(parameter);
+		}
+		else {
+			this.append('?');
+			this.parameter(parameter);
+		}
+		return this;
+	}
+
+	public QueryBuilder<TableType> append(
+			String query,
 			Iterable<Object> parameters) {
-		this.append(query);
-		this.append(parameters);
+		if (query != null) {
+			this.append(query);
+			this.parameters(parameters);
+		}
+		else {
+			boolean first;
+
+			first = true;
+			for (Object parameter : parameters) {
+				if (first) first = false;
+				else this.append(", ");
+				this.append('?');
+				this.parameter(parameter);
+			}
+		}
 		return this;
 	}
 
 	public QueryBuilder<TableType> append(
 			String query,
 			Object... parameters) {
-		this.append(query);
-		this.append(parameters);
+		if (query != null) {
+			this.append(query);
+			this.parameters(parameters);
+		}
+		else {
+			boolean first;
+
+			first = true;
+			for (Object parameter : parameters) {
+				if (first) first = false;
+				else this.append(", ");
+				this.append('?');
+				this.parameter(parameter);
+			}
+		}
 		return this;
 	}
 
-	public QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> column(
 			TableType column) {
-		this.appendIdentifier(this.table.getColumn(column).getName());
+		this.identifier(this.table.getColumn(column).getName());
 		return this;
 	}
 
-	public QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> column(
 			TableType column,
 			String query) {
-		this.append(column);
+		this.column(column);
 		this.append(query);
 		return this;
 	}
 
-	public QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> column(
+			TableType column,
+			String query,
+			Object parameter) {
+		this.column(column);
+		this.append(query);
+		this.parameter(parameter);
+		return this;
+	}
+
+	public QueryBuilder<TableType> column(
 			TableType column,
 			String query,
 			Iterable<Object> parameters) {
-		this.append(column);
+		this.column(column);
 		this.append(query);
-		this.append(parameters);
+		this.parameters(parameters);
 		return this;
 	}
 
-	public QueryBuilder<TableType> append(
+	public QueryBuilder<TableType> column(
 			TableType column,
 			String query,
 			Object... parameters) {
-		this.append(column);
+		this.column(column);
 		this.append(query);
-		this.append(parameters);
+		this.parameters(parameters);
 		return this;
 	}
 
-	public QueryBuilder<TableType> appendTableName() {
-		this.appendIdentifier(this.table.getName());
+	public QueryBuilder<TableType> columns(
+			Iterable<TableType> columns) {
+		boolean first;
+
+		first = true;
+		for (TableType column : columns) {
+			if (first) first = false;
+			else this.append(", ");
+			this.column(column);
+		}
 		return this;
 	}
 
-	public QueryBuilder<TableType> appendQualifiedTableName() {
+	public QueryBuilder<TableType> columns(
+			TableType... columns) {
+		boolean first;
+
+		first = true;
+		for (TableType column : columns) {
+			if (first) first = false;
+			else this.append(", ");
+			this.column(column);
+		}
+		return this;
+	}
+
+	public QueryBuilder<TableType> tableName() {
+		this.identifier(this.table.getName());
+		return this;
+	}
+
+	public QueryBuilder<TableType> qualifiedTableName() {
 		String schema;
 
 		schema = this.table.getSchema();
-		if (schema != null) this.appendIdentifier(schema).append('.');
-		return this.appendTableName();
+		if (schema != null) this.identifier(schema).append('.');
+		return this.tableName();
 	}
 
 	public QueryBuilder<TableType> dump(PrintStream stream) {

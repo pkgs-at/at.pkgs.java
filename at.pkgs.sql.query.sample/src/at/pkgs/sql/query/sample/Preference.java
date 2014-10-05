@@ -22,6 +22,14 @@ public class Preference {
 
 	}
 
+	public static class Query extends Database.Query<Table, Preference> {
+
+		protected Query() {
+			super(Table.class, Preference.class);
+		}
+
+	}
+
 	private String key;
 
 	private String value;

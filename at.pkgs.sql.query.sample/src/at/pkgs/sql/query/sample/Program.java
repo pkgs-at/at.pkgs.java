@@ -7,15 +7,6 @@ import at.pkgs.sql.query.dialect.DerbyDialect;
 
 public class Program {
 
-	private static class PreferenceQuery
-	extends Database.Query<Preference.Table, Preference> {
-
-		protected PreferenceQuery() {
-			super(Preference.Table.class, Preference.class);
-		}
-
-	}
-
 	public static void main(String[] arguments) throws Exception {
 		Connection connection;
 		Database database;
@@ -30,7 +21,7 @@ public class Program {
 						.buildSelectStatement());
 		System.out.println(
 				database.query(Preference.Table.class, Preference.class)
-						.where(Preference.Table.Key).is("AAA")
+						.where(Preference.Table.Key).oneOf("AAA", "BBB")
 						.query().buildSelectStatement());
 		System.out.println(
 				database.query(Preference.Table.class, Preference.class)
@@ -45,18 +36,18 @@ public class Program {
 						}})
 						.buildSelectStatement());
 		System.out.println(
-				database.query(new PreferenceQuery() {{
+				database.query(new Preference.Query() {{
 					where(Preference.Table.Key).is("AAA");
 				}}).buildSelectStatement());
 		System.out.println(
-				database.query(new PreferenceQuery() {{
+				database.query(new Preference.Query() {{
 					where(new And() {{
 						with(Preference.Table.Key).is("AAA");
 						with(Preference.Table.Value).isNotNull();
 					}});
 				}}).buildSelectStatement());
 		System.out.println(
-				database.query(new PreferenceQuery() {{
+				database.query(new Preference.Query() {{
 					where(new And() {{
 						with(Preference.Table.Key).is("AAA");
 						with(Preference.Table.Value).isNotNull();
@@ -67,7 +58,7 @@ public class Program {
 					orderBy(false, Preference.Table.UpdatedAt);
 				}}).buildSelectStatement());
 		System.out.println(
-				database.query(new PreferenceQuery() {{
+				database.query(new Preference.Query() {{
 					where(new And() {{
 						with(Preference.Table.Key).is("AAA");
 						with(Preference.Table.Value).isNotNull();
@@ -85,18 +76,18 @@ public class Program {
 				}}).buildSelectStatement());
 		database.newQueryBuilder(Preference.Table.class)
 				.append("CREATE TABLE ")
-				.appendQualifiedTableName()
+				.qualifiedTableName()
 				.append('(')
-				.append(Preference.Table.Key)
+				.column(Preference.Table.Key)
 				.append(" CHARACTER VARYING(255) NOT NULL")
 				.append(", ")
-				.append(Preference.Table.Value)
+				.column(Preference.Table.Value)
 				.append(" CHARACTER VARYING(4095) NOT NULL")
 				.append(", ")
-				.append(Preference.Table.CreatedAt)
+				.column(Preference.Table.CreatedAt)
 				.append(" TIMESTAMP NOT NULL")
 				.append(", ")
-				.append(Preference.Table.UpdatedAt)
+				.column(Preference.Table.UpdatedAt)
 				.append(" TIMESTAMP NOT NULL")
 				.append(')')
 				.dump(System.out)
@@ -104,15 +95,13 @@ public class Program {
 				.asAffectedRows(connection);
 		database.newQueryBuilder(Preference.Table.class)
 				.append("INSERT INTO ")
-				.appendQualifiedTableName()
+				.qualifiedTableName()
 				.append('(')
-				.append(Preference.Table.Key)
-				.append(", ")
-				.append(Preference.Table.Value)
-				.append(", ")
-				.append(Preference.Table.CreatedAt)
-				.append(", ")
-				.append(Preference.Table.UpdatedAt)
+				.columns(
+						Preference.Table.Key,
+						Preference.Table.Value,
+						Preference.Table.CreatedAt,
+						Preference.Table.UpdatedAt)
 				.append(')')
 				.append(
 						" VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
@@ -121,7 +110,7 @@ public class Program {
 				.dump(System.out)
 				.execute()
 				.asAffectedRows(connection);
-		for (Preference model : database.query(new PreferenceQuery() {{
+		for (Preference model : database.query(new Preference.Query() {{
 			
 		}}).selectAll(connection)) {
 			System.out.println(model);

@@ -48,7 +48,7 @@ class OrderByClause<TableType extends Enum<?>> {
 		}
 
 		void build(QueryBuilder<TableType> builder) {
-			builder.append(this.column);
+			builder.column(this.column);
 			builder.append(' ');
 			builder.append(this.direction.text);
 		}
