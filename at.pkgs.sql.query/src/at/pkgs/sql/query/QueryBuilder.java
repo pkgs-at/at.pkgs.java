@@ -62,6 +62,10 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 		return this.parameters;
 	}
 
+	boolean isColumn(Object column) {
+		return this.table.getType().isAssignableFrom(column.getClass());
+	}
+
 	public QueryBuilder<TableType> identifier(
 			String name) {
 		this.dialect.appendIdentifier(this.builder, name);
@@ -237,6 +241,26 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 		schema = this.table.getSchema();
 		if (schema != null) this.identifier(schema).append('.');
 		return this.tableName();
+	}
+
+	public QueryBuilder<TableType> defaultValue(TableType column) {
+		this.dialect.defaultValue(this, column);
+		return this;
+	}
+
+	public QueryBuilder<TableType> currentTimestamp() {
+		this.dialect.currentTimestamp(this.builder);
+		return this;
+	}
+
+	public QueryBuilder<TableType> currentDate() {
+		this.dialect.currentDate(this.builder);
+		return this;
+	}
+
+	public QueryBuilder<TableType> currentTime() {
+		this.dialect.currentTime(this.builder);
+		return this;
 	}
 
 	public QueryBuilder<TableType> dumpIf(

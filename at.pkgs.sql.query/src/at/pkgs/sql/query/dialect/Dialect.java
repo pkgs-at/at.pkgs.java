@@ -73,9 +73,93 @@ public interface Dialect {
 
 	}
 
+	public static abstract class UpdateVisitor<TableType extends Enum<?>> {
+
+		protected QueryBuilder<TableType> builder;
+
+		protected void initialize() {
+			// do nothing
+		}
+
+		public void initialize(
+				QueryBuilder<TableType> builder) {
+			this.builder = builder;
+			this.initialize();
+		}
+
+		public boolean update() {
+			return false;
+		}
+
+		public boolean table() {
+			return false;
+		}
+
+		public boolean set() {
+			return false;
+		}
+
+		public boolean where() {
+			return false;
+		}
+
+		public void afterAll() {
+			// do nothing
+		}
+
+	}
+
+	public static abstract class DeleteVisitor<TableType extends Enum<?>> {
+
+		protected QueryBuilder<TableType> builder;
+
+		protected void initialize() {
+			// do nothing
+		}
+
+		public void initialize(
+				QueryBuilder<TableType> builder) {
+			this.builder = builder;
+			this.initialize();
+		}
+
+		public boolean delete() {
+			return false;
+		}
+
+		public boolean from() {
+			return false;
+		}
+
+		public boolean where() {
+			return false;
+		}
+
+		public void afterAll() {
+			// do nothing
+		}
+
+	}
+
 	public void appendIdentifier(StringBuilder builder, String name);
+
+	public <TableType extends Enum<?>> void defaultValue(
+			QueryBuilder<TableType> builder,
+			TableType column);
+
+	public void currentTimestamp(StringBuilder builder);
+
+	public void currentDate(StringBuilder builder);
+
+	public void currentTime(StringBuilder builder);
 
 	public <TableType extends Enum<?>>
 	SelectVisitor<TableType> newSelectVisitor();
+
+	public <TableType extends Enum<?>>
+	UpdateVisitor<TableType> newUpdateVisitor();
+
+	public <TableType extends Enum<?>>
+	DeleteVisitor<TableType> newDeleteVisitor();
 
 }

@@ -54,6 +54,21 @@ class ColumnDefinition<TableType> {
 				return ColumnDefinition.this.getFieldName();
 			}
 
+			@Override
+			public boolean isPrimaryKey() {
+				return false;
+			}
+
+			@Override
+			public Database.ColumnValue insertWith() {
+				return Database.ColumnValue.ModelValue;
+			}
+
+			@Override
+			public Database.ColumnValue updateWith() {
+				return Database.ColumnValue.ModelValue;
+			}
+
 		};
 		this.annotation = annotation;
 	}

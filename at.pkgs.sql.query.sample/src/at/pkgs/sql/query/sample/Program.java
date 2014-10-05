@@ -3,7 +3,9 @@ package at.pkgs.sql.query.sample;
 import java.sql.DriverManager;
 import java.sql.Connection;
 import at.pkgs.sql.query.Database;
+import at.pkgs.sql.query.QueryBuilder;
 import at.pkgs.sql.query.dialect.DerbyDialect;
+import at.pkgs.sql.query.sample.Preference.Table;
 
 public class Program {
 
@@ -17,30 +19,30 @@ public class Program {
 				"jdbc:derby:memory:test;create=true");
 		database = new Database(new DerbyDialect(), null);
 		database.query(Preference.Table.class, Preference.class)
-				.dumpSelectAllIf(true, Database.DumpCollector.out);
+				.dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(Preference.Table.class, Preference.class)
 				.where(Preference.Table.Key).oneOf("AAA", "BBB")
 				.query()
-				.dumpSelectAllIf(true, Database.DumpCollector.out);
+				.dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(Preference.Table.class, Preference.class)
 				.where(new Database.And<Preference.Table, Preference>(){{
 					with(Preference.Table.Key).is("AAA");
 				}})
-				.dumpSelectAllIf(true, Database.DumpCollector.out);
+				.dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(Preference.Table.class, Preference.class)
 				.where(new Database.And<Preference.Table, Preference>(){{
 					with(Preference.Table.Key).is(null);
 				}})
-				.dumpSelectAllIf(true, Database.DumpCollector.out);
+				.dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(new Preference.Query() {{
 			where(Preference.Table.Key).is("AAA");
-		}}).dumpSelectAllIf(true, Database.DumpCollector.out);
+		}}).dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(new Preference.Query() {{
 			where(new And() {{
 				with(Preference.Table.Key).is("AAA");
 				with(Preference.Table.Value).isNotNull();
 			}});
-		}}).dumpSelectAllIf(true, Database.DumpCollector.out);
+		}}).dumpDeleteIf(true, Database.DumpCollector.out);
 		database.query(new Preference.Query() {{
 			where(new And() {{
 				with(Preference.Table.Key).is("AAA");
@@ -50,7 +52,7 @@ public class Program {
 			}});
 			orderBy(true, Preference.Table.CreatedAt);
 			orderBy(false, Preference.Table.UpdatedAt);
-		}}).dumpSelectAllIf(true, Database.DumpCollector.out);
+		}}).dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(new Preference.Query() {{
 			where(new And() {{
 				with(Preference.Table.Key).is("AAA");
@@ -66,7 +68,33 @@ public class Program {
 			}});
 			distinct();
 			limit(1);
-		}}).dumpSelectAllIf(true, Database.DumpCollector.out);
+		}}).dumpSelectIf(true, Database.DumpCollector.out);
+		database.query(new Preference.Query() {{
+			set(new Set() {{
+				with(Preference.Table.Value, new Expression() {
+
+					@Override
+					public void build(QueryBuilder<Table> builder) {
+						builder.append("CONCAT(");
+						builder.column(Preference.Table.Key, ", ?)", "'s default");
+					}
+
+				});
+				with(Preference.Table.CreatedAt, Database.ColumnValue.KeepOriginal);
+				with(Preference.Table.UpdatedAt, Database.ColumnValue.DefaultValue);
+			}});
+			where(new And() {{
+				with(Preference.Table.Key).is("AAA");
+			}});
+		}}).dumpUpdateIf(true, Database.DumpCollector.out);
+		database.query(new Preference.Query() {{
+			set(Preference.Table.Key, "AAB");
+			set(Preference.Table.Value, Preference.Table.Key);
+			set(Preference.Table.UpdatedAt, Database.ColumnValue.CurrentTimestamp);
+			where(new And() {{
+				with(Preference.Table.Key).is("AAA");
+			}});
+		}}).dumpUpdateIf(true, Database.DumpCollector.out);
 		database.newQueryBuilder(Preference.Table.class)
 				.append("CREATE TABLE ")
 				.qualifiedTableName()
@@ -105,7 +133,7 @@ public class Program {
 				.asAffectedRows(connection);
 		for (Preference model : database.query(new Preference.Query() {{
 			
-		}}).selectAll(connection)) {
+		}}).select(connection)) {
 			System.out.println(model);
 		}
 		connection.close();

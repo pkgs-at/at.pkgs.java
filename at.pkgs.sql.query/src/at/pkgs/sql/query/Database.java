@@ -77,7 +77,7 @@ public class Database {
 
 	}
 
-	public static interface Criterion<TableType extends Enum<?>> {
+	public static interface Expression<TableType extends Enum<?>> {
 
 		public void build(QueryBuilder<TableType> builder);
 
@@ -135,11 +135,37 @@ public class Database {
 
 	}
 
+	public static enum ColumnValue {
+
+		ModelValue,
+
+		AutoIncrement,
+
+		KeepOriginal,
+
+		DefaultValue,
+
+		ReturnInserted,
+
+		CurrentTimestamp,
+
+		CurrentDate,
+
+		CurrentTime;
+
+	}
+
 	@Target(ElementType.FIELD)
 	@Retention(RetentionPolicy.RUNTIME)
 	public static @interface Column {
 
 		public String name();
+
+		public boolean isPrimaryKey() default false;
+
+		public ColumnValue insertWith() default ColumnValue.ModelValue;
+
+		public ColumnValue updateWith() default ColumnValue.ModelValue;
 
 	}
 
@@ -155,6 +181,13 @@ public class Database {
 		public Class<DatabaseType> getDatabaseType();
 
 		public DatabaseType getDatabaseValue();
+
+	}
+
+	public static abstract class Set<TableType extends Enum<?>>
+	extends SetClause<TableType> {
+
+		// nothing
 
 	}
 

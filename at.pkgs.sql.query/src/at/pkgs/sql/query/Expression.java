@@ -287,12 +287,12 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 	}
 
 	public Criterion<TableType, ModelType> evaluate(
-			final Database.Criterion<TableType> criterion) {
+			final Database.Expression<TableType> expression) {
 		return new AbstractCriterion(this.parent) {
 
 			@Override
 			protected void build(QueryBuilder<TableType> builder) {
-				criterion.build(builder);
+				expression.build(builder);
 			}
 
 		};

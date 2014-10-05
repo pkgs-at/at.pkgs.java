@@ -25,6 +25,20 @@ import at.pkgs.sql.query.dialect.Dialect;
 public abstract class Query<TableType extends Enum<?>, ModelType>
 implements Criterion.Parent<TableType, ModelType> {
 
+	protected abstract class Expression
+	implements Database.Expression<TableType> {
+
+		// nothing
+
+	}
+
+	protected abstract class Set
+	extends Database.Set<TableType> {
+
+		// nothing
+
+	}
+
 	protected abstract class And
 	extends Database.And<TableType, ModelType> {
 
@@ -54,6 +68,8 @@ implements Criterion.Parent<TableType, ModelType> {
 
 	private Iterable<TableType> columns;
 
+	private Database.Set<TableType> set;
+
 	private Criterion<TableType, ModelType> where;
 
 	private Database.OrderBy<TableType> order;
@@ -69,6 +85,7 @@ implements Criterion.Parent<TableType, ModelType> {
 		this.model = model;
 		this.distinct = false;
 		this.columns = null;
+		this.set = null;
 		this.where = null;
 		this.order = null;
 		this.offset = (-1);
@@ -95,6 +112,25 @@ implements Criterion.Parent<TableType, ModelType> {
 		return this.columns(Arrays.asList(columns));
 	}
 
+	public Query<TableType, ModelType> set(
+			Database.Set<TableType> set) {
+		this.set = set;
+		return this;
+	}
+
+	public Query<TableType, ModelType> set(
+			TableType column, Object value) {
+		if (this.set == null) {
+			this.set = new Database.Set<TableType>() {
+
+				// nothing
+
+			};
+		}
+		this.set.with(column, value);
+		return this;
+	}
+
 	Query<TableType, ModelType> where(
 			Criterion<TableType, ModelType> criterion) {
 		this.where = criterion;
@@ -106,8 +142,11 @@ implements Criterion.Parent<TableType, ModelType> {
 		return this.where((Criterion<TableType, ModelType>)criterion);
 	}
 
-	public Expression<TableType, ModelType> where(TableType column) {
-		return new Expression<TableType, ModelType>(this, column);
+	public at.pkgs.sql.query.Expression<TableType, ModelType>
+	where(TableType column) {
+		return new at.pkgs.sql.query.Expression<TableType, ModelType>(
+				this,
+				column);
 	}
 
 	public Query<TableType, ModelType> sort(
@@ -214,7 +253,7 @@ implements Criterion.Parent<TableType, ModelType> {
 		return this.selectOne(null);
 	}
 
-	public Query<TableType, ModelType> dumpSelectAllIf(
+	public Query<TableType, ModelType> dumpSelectIf(
 			boolean enabled,
 			Database.DumpCollector sink) {
 		if (!enabled) return this;
@@ -222,7 +261,7 @@ implements Criterion.Parent<TableType, ModelType> {
 		return this;
 	}
 
-	public List<ModelType> selectAll(Connection connection) {
+	public List<ModelType> select(Connection connection) {
 		return this.buildSelectQuery()
 				.execute(
 						this.model,
@@ -230,8 +269,80 @@ implements Criterion.Parent<TableType, ModelType> {
 				.asModelList(connection);
 	}
 
-	public List<ModelType> selectAll() {
-		return this.selectAll(null);
+	public List<ModelType> select() {
+		return this.select(null);
+	}
+
+	QueryBuilder<TableType> buildUpdateQuery() {
+		QueryBuilder<TableType> builder;
+		Dialect.UpdateVisitor<TableType> visitor;
+
+		builder = this.database.newQueryBuilder(this.table);
+		visitor = this.database.getDialect().newUpdateVisitor();
+		visitor.initialize(builder);
+		if (!visitor.update())
+			builder.append("UPDATE");
+		if (!visitor.table())
+			builder.append(' ').qualifiedTableName();
+		if (!visitor.set() && this.set != null)
+			this.set.build(builder);
+		if (!visitor.where() && this.where != null)
+			this.where.build(builder, true);
+		visitor.afterAll();
+		return builder;
+	}
+
+	public Query<TableType, ModelType> dumpUpdateIf(
+			boolean enabled,
+			Database.DumpCollector sink) {
+		if (!enabled) return this;
+		this.buildUpdateQuery().dumpIf(true, sink);
+		return this;
+	}
+
+	public int update(Connection connection) {
+		return this.buildUpdateQuery()
+				.execute()
+				.asAffectedRows(connection);
+	}
+
+	public int update() {
+		return this.update(null);
+	}
+
+	QueryBuilder<TableType> buildDeleteQuery() {
+		QueryBuilder<TableType> builder;
+		Dialect.DeleteVisitor<TableType> visitor;
+
+		builder = this.database.newQueryBuilder(this.table);
+		visitor = this.database.getDialect().newDeleteVisitor();
+		visitor.initialize(builder);
+		if (!visitor.delete())
+			builder.append("DELETE");
+		if (!visitor.from())
+			builder.append(" FROM ").qualifiedTableName();
+		if (!visitor.where() && this.where != null)
+			this.where.build(builder, true);
+		visitor.afterAll();
+		return builder;
+	}
+
+	public Query<TableType, ModelType> dumpDeleteIf(
+			boolean enabled,
+			Database.DumpCollector sink) {
+		if (!enabled) return this;
+		this.buildDeleteQuery().dumpIf(true, sink);
+		return this;
+	}
+
+	public int delete(Connection connection) {
+		return this.buildDeleteQuery()
+				.execute()
+				.asAffectedRows(connection);
+	}
+
+	public int delete() {
+		return this.delete(null);
 	}
 
 }
