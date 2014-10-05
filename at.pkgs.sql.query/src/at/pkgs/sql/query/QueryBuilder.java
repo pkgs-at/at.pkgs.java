@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.io.PrintStream;
 import at.pkgs.sql.query.dialect.Dialect;
 
-public final class QueryBuilder<TableType> {
+public final class QueryBuilder<TableType extends Enum<?>> {
+
+	private final Database database;
 
 	private final Dialect dialect;
 
@@ -32,9 +34,10 @@ public final class QueryBuilder<TableType> {
 
 	private final List<Object> parameters;
 
-	QueryBuilder(Dialect dialect, TableDefinition<TableType> table) {
-		this.dialect = dialect;
-		this.table = table;
+	QueryBuilder(Database database, Class<TableType> table) {
+		this.database = database;
+		this.dialect = database.getDialect();
+		this.table = database.getTable(table);
 		this.builder = new StringBuilder();
 		this.parameters = new ArrayList<Object>();
 	}
@@ -151,6 +154,13 @@ public final class QueryBuilder<TableType> {
 		}
 		stream.println("(EOL)");
 		return this;
+	}
+
+	public QueryExecutor execute() {
+		return new QueryExecutor(
+				this.database,
+				this.toString(),
+				this.getParameters());
 	}
 
 }

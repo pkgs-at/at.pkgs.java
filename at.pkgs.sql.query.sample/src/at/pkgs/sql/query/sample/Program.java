@@ -83,46 +83,44 @@ public class Program {
 					distinct();
 					limit(1);
 				}}).buildSelectStatement());
-		database.executeAffectedRows(
-				connection,
-				database
-						.newQueryBuilder(Preference.Table.class)
-						.append("CREATE TABLE ")
-						.appendQualifiedTableName()
-						.append('(')
-						.append(Preference.Table.Key)
-						.append(" CHARACTER VARYING(255) NOT NULL")
-						.append(", ")
-						.append(Preference.Table.Value)
-						.append(" CHARACTER VARYING(4095) NOT NULL")
-						.append(", ")
-						.append(Preference.Table.CreatedAt)
-						.append(" TIMESTAMP NOT NULL")
-						.append(", ")
-						.append(Preference.Table.UpdatedAt)
-						.append(" TIMESTAMP NOT NULL")
-						.append(')')
-						.dump(System.out));
-		database.executeAffectedRows(
-				connection,
-				database
-						.newQueryBuilder(Preference.Table.class)
-						.append("INSERT INTO ")
-						.appendQualifiedTableName()
-						.append('(')
-						.append(Preference.Table.Key)
-						.append(", ")
-						.append(Preference.Table.Value)
-						.append(", ")
-						.append(Preference.Table.CreatedAt)
-						.append(", ")
-						.append(Preference.Table.UpdatedAt)
-						.append(')')
-						.append(
-								" VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-								"AAA",
-								"VVV")
-						.dump(System.out));
+		database.newQueryBuilder(Preference.Table.class)
+				.append("CREATE TABLE ")
+				.appendQualifiedTableName()
+				.append('(')
+				.append(Preference.Table.Key)
+				.append(" CHARACTER VARYING(255) NOT NULL")
+				.append(", ")
+				.append(Preference.Table.Value)
+				.append(" CHARACTER VARYING(4095) NOT NULL")
+				.append(", ")
+				.append(Preference.Table.CreatedAt)
+				.append(" TIMESTAMP NOT NULL")
+				.append(", ")
+				.append(Preference.Table.UpdatedAt)
+				.append(" TIMESTAMP NOT NULL")
+				.append(')')
+				.dump(System.out)
+				.execute()
+				.asAffectedRows(connection);
+		database.newQueryBuilder(Preference.Table.class)
+				.append("INSERT INTO ")
+				.appendQualifiedTableName()
+				.append('(')
+				.append(Preference.Table.Key)
+				.append(", ")
+				.append(Preference.Table.Value)
+				.append(", ")
+				.append(Preference.Table.CreatedAt)
+				.append(", ")
+				.append(Preference.Table.UpdatedAt)
+				.append(')')
+				.append(
+						" VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+						"AAA",
+						"VVV")
+				.dump(System.out)
+				.execute()
+				.asAffectedRows(connection);
 		for (Preference model : database.query(new PreferenceQuery() {{
 			
 		}}).selectAll(connection)) {

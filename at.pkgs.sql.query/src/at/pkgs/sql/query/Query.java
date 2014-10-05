@@ -220,12 +220,13 @@ implements Criterion.Parent<TableType, ModelType> {
 	}
 
 	public ModelType selectOne(Connection connection) {
-		return this.database.executeModel(
-				connection,
-				this.table,
-				this.model,
-				this.columns,
-				this.limit(1).buildSelectQuery());
+		return this.limit(1).buildSelectQuery()
+				.execute()
+				.withModel(
+						this.table,
+						this.model,
+						this.columns)
+				.asModel(connection);
 	}
 
 	public ModelType selectOne() {
@@ -233,12 +234,13 @@ implements Criterion.Parent<TableType, ModelType> {
 	}
 
 	public List<ModelType> selectAll(Connection connection) {
-		return this.database.executeModelList(
-				connection,
-				this.table,
-				this.model,
-				this.columns,
-				this.buildSelectQuery());
+		return this.buildSelectQuery()
+				.execute()
+				.withModel(
+						this.table,
+						this.model,
+						this.columns)
+				.asModelList(connection);
 	}
 
 	public List<ModelType> selectAll() {

@@ -20,7 +20,7 @@ package at.pkgs.sql.query;
 import java.util.List;
 import java.util.ArrayList;
 
-class OrderByClause<TableType> {
+class OrderByClause<TableType extends Enum<?>> {
 
 	private static enum Direction {
 

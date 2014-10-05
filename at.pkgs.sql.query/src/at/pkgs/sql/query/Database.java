@@ -148,7 +148,7 @@ public class Database {
 
 	}
 
-	public static abstract class OrderBy<TableType>
+	public static abstract class OrderBy<TableType extends Enum<?>>
 	extends OrderByClause<TableType> {
 
 		// nothing
@@ -203,9 +203,7 @@ public class Database {
 
 	public <TableType extends Enum<?>> QueryBuilder<TableType> newQueryBuilder(
 			Class<TableType> table) {
-		return new QueryBuilder<TableType>(
-				this.getDialect(),
-				this.getTable(table));
+		return new QueryBuilder<TableType>(this, table);
 	}
 
 	public <TableType extends Enum<?>, ModelType>
@@ -272,51 +270,6 @@ public class Database {
 		}
 	}
 
-	public int executeAffectedRows(
-			Connection connection,
-			String query,
-			Object... parameters) {
-		return this.executeAffectedRows(
-				connection,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType extends Enum<?>> int executeAffectedRows(
-			Connection connection,
-			QueryBuilder<TableType> builder) {
-		return this.executeAffectedRows(
-				connection,
-				builder.toString(),
-				builder.getParameters());
-	}
-
-	public int executeAffectedRows(
-			String query,
-			Iterable<Object> parameters) {
-		return this.executeAffectedRows(
-				null,
-				query,
-				parameters);
-	}
-
-	public int executeAffectedRows(
-			String query,
-			Object... parameters) {
-		return this.executeAffectedRows(
-				null,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType extends Enum<?>> int executeAffectedRows(
-			QueryBuilder<TableType> builder) {
-		return this.executeAffectedRows(
-				null,
-				builder.toString(),
-				builder.getParameters());
-	}
-
 	public ResultSet executeResultSet(
 			Connection connection,
 			String query,
@@ -330,51 +283,6 @@ public class Database {
 		catch (SQLException throwable) {
 			throw new Exception(throwable);
 		}
-	}
-
-	public ResultSet executeResultSet(
-			Connection connection,
-			String query,
-			Object... parameters) {
-		return this.executeResultSet(
-				connection,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType> ResultSet executeResultSet(
-			Connection connection,
-			QueryBuilder<TableType> builder) {
-		return this.executeResultSet(
-				connection,
-				builder.toString(),
-				builder.getParameters());
-	}
-
-	public ResultSet executeResultSet(
-			String query,
-			Iterable<Object> parameters) {
-		return this.executeResultSet(
-				null,
-				query,
-				parameters);
-	}
-
-	public ResultSet executeResultSet(
-			String query,
-			Object... parameters) {
-		return this.executeResultSet(
-				null,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType> ResultSet executeResultSet(
-			QueryBuilder<TableType> builder) {
-		return this.executeResultSet(
-				null,
-				builder.toString(),
-				builder.getParameters());
 	}
 
 	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
@@ -416,188 +324,6 @@ public class Database {
 				throw new Exception(throwable);
 			}
 		}
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Connection connection,
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			String query,
-			Iterable<Object> parameters) {
-		return this.executeModel(
-				connection,
-				table,
-				type,
-				columns,
-				null,
-				query,
-				parameters);
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Connection connection,
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			ModelType model,
-			String query,
-			Object... parameters) {
-		return this.executeModel(
-				connection,
-				table,
-				type,
-				columns,
-				model,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Connection connection,
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			String query,
-			Object... parameters) {
-		return this.executeModel(
-				connection,
-				table,
-				type,
-				columns,
-				null,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Connection connection,
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			ModelType model,
-			QueryBuilder<TableType> builder) {
-		return this.executeModel(
-				connection,
-				table,
-				type,
-				columns,
-				model,
-				builder.toString(),
-				builder.getParameters());
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Connection connection,
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			QueryBuilder<TableType> builder) {
-		return this.executeModel(
-				connection,
-				table,
-				type,
-				columns,
-				null,
-				builder.toString(),
-				builder.getParameters());
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			ModelType model,
-			String query,
-			Iterable<Object> parameters) {
-		return this.executeModel(
-				null,
-				table,
-				type,
-				columns,
-				model,
-				query,
-				parameters);
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			String query,
-			Iterable<Object> parameters) {
-		return this.executeModel(
-				null,
-				table,
-				type,
-				columns,
-				null,
-				query,
-				parameters);
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			ModelType model,
-			String query,
-			Object... parameters) {
-		return this.executeModel(
-				null,
-				table,
-				type,
-				columns,
-				model,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			String query,
-			Object... parameters) {
-		return this.executeModel(
-				null,
-				table,
-				type,
-				columns,
-				null,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			ModelType model,
-			QueryBuilder<TableType> builder) {
-		return this.executeModel(
-				null,
-				table,
-				type,
-				columns,
-				model,
-				builder.toString(),
-				builder.getParameters());
-	}
-
-	public <TableType extends Enum<?>, ModelType> ModelType executeModel(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			QueryBuilder<TableType> builder) {
-		return this.executeModel(
-				null,
-				table,
-				type,
-				columns,
-				null,
-				builder.toString(),
-				builder.getParameters());
 	}
 
 	public <TableType extends Enum<?>, ModelType>
@@ -646,84 +372,16 @@ public class Database {
 		}
 	}
 
-	public <TableType extends Enum<?>, ModelType>
-	List<ModelType> executeModelList(
-			Connection connection,
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			String query,
-			Object... parameters) {
-		return this.executeModelList(
-				connection,
-				table,
-				type,
-				columns,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType extends Enum<?>, ModelType>
-	List<ModelType> executeModelList(
-			Connection connection,
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			QueryBuilder<TableType> builder) {
-		return this.executeModelList(
-				connection,
-				table,
-				type,
-				columns,
-				builder.toString(),
-				builder.getParameters());
-	}
-
-	public <TableType extends Enum<?>, ModelType>
-	List<ModelType> executeModelList(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
+	public QueryExecutor execute(
 			String query,
 			Iterable<Object> parameters) {
-		return this.executeModelList(
-				null,
-				table,
-				type,
-				columns,
-				query,
-				parameters);
+		return new QueryExecutor(this, query, parameters);
 	}
 
-	public <TableType extends Enum<?>, ModelType>
-	List<ModelType> executeModelList(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
+	public QueryExecutor execute(
 			String query,
-			Object... parameters) {
-		return this.executeModelList(
-				null,
-				table,
-				type,
-				columns,
-				query,
-				Arrays.asList(parameters));
-	}
-
-	public <TableType extends Enum<?>, ModelType>
-	List<ModelType> executeModelList(
-			Class<TableType> table,
-			Class<ModelType> type,
-			Iterable<TableType> columns,
-			QueryBuilder<TableType> builder) {
-		return this.executeModelList(
-				null,
-				table,
-				type,
-				columns,
-				builder.toString(),
-				builder.getParameters());
+			Object parameters) {
+		return this.execute(query, Arrays.asList(parameters));
 	}
 
 }

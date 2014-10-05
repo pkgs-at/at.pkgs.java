@@ -32,7 +32,8 @@ public class SqlServerDialect extends AbstractDialect {
 	}
 
 	@Override
-	public <TableType> SelectVisitor<TableType> newSelectVisitor() {
+	public <TableType extends Enum<?>>
+	SelectVisitor<TableType> newSelectVisitor() {
 		return new SelectVisitor<TableType>() {
 
 			@Override

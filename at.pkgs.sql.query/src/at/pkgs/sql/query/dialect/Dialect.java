@@ -21,7 +21,7 @@ import at.pkgs.sql.query.QueryBuilder;
 
 public interface Dialect {
 
-	public static abstract class SelectVisitor<TableType> {
+	public static abstract class SelectVisitor<TableType extends Enum<?>> {
 
 		protected QueryBuilder<TableType> builder;
 
@@ -75,6 +75,7 @@ public interface Dialect {
 
 	public void appendIdentifier(StringBuilder builder, String name);
 
-	public <TableType> SelectVisitor<TableType> newSelectVisitor();
+	public <TableType extends Enum<?>>
+	SelectVisitor<TableType> newSelectVisitor();
 
 }
