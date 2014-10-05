@@ -190,8 +190,16 @@ implements Criterion.Parent<TableType, ModelType> {
 		return builder;
 	}
 
-	public String buildSelectStatement() {
-		return this.buildSelectQuery().getQuery();
+	public Query<TableType, ModelType> dumpSelectOneIf(
+			boolean enabled,
+			Database.DumpCollector sink) {
+		int limit;
+
+		if (!enabled) return this;
+		limit = this.limit;
+		this.limit(1).buildSelectQuery().dumpIf(true, sink);
+		this.limit = limit;
+		return this;
 	}
 
 	public ModelType selectOne(Connection connection) {
@@ -204,6 +212,14 @@ implements Criterion.Parent<TableType, ModelType> {
 
 	public ModelType selectOne() {
 		return this.selectOne(null);
+	}
+
+	public Query<TableType, ModelType> dumpSelectAllIf(
+			boolean enabled,
+			Database.DumpCollector sink) {
+		if (!enabled) return this;
+		this.buildSelectQuery().dumpIf(true, sink);
+		return this;
 	}
 
 	public List<ModelType> selectAll(Connection connection) {

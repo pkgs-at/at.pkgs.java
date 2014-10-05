@@ -20,7 +20,6 @@ package at.pkgs.sql.query;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.io.PrintStream;
 import at.pkgs.sql.query.dialect.Dialect;
 
 public final class QueryBuilder<TableType extends Enum<?>> {
@@ -51,7 +50,7 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 		builder.append('\n');
 		for (Object parameter : parameters)
 			builder.append(parameter).append(", ");
-		builder.append("(EOL)");
+		builder.append("(end of parameters)");
 		return builder.toString();
 	}
 
@@ -240,8 +239,11 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 		return this.tableName();
 	}
 
-	public QueryBuilder<TableType> dump(PrintStream stream) {
-		stream.println(this.toString());
+	public QueryBuilder<TableType> dumpIf(
+			boolean enabled,
+			Database.DumpCollector sink) {
+		if (!enabled) return this;
+		sink.collect(this.toString());
 		return this;
 	}
 

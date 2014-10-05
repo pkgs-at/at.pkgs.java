@@ -63,6 +63,26 @@ public class Database {
 
 	}
 
+	public static interface DumpCollector {
+
+		public static final DumpCollector out = new DumpCollector() {
+
+			public void collect(String dump) {
+				System.out.println(dump);
+			}
+
+		};
+
+		public void collect(String dump);
+
+	}
+
+	public static interface Criterion<TableType extends Enum<?>> {
+
+		public void build(QueryBuilder<TableType> builder);
+
+	}
+
 	public enum Null {
 
 		BigDecimal(Types.NUMERIC),
@@ -93,6 +113,14 @@ public class Database {
 
 		private Null(int type) {
 			this.type = type;
+		}
+
+		@Override
+		public String toString() {
+			return new StringBuilder("(typed NULL of ")
+					.append(this.name())
+					.append(')')
+					.toString();
 		}
 
 	}

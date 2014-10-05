@@ -120,6 +120,86 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 		};
 	}
 
+	public Criterion<TableType, ModelType> lessThan(
+			final Object value) {
+		return new AbstractCriterion(this.parent) {
+
+			@Override
+			boolean isEmpty() {
+				return value == null;
+			}
+
+			@Override
+			protected void build(QueryBuilder<TableType> builder) {
+				builder.column(
+						Expression.this.column,
+						" < ?",
+						value);
+			}
+
+		};
+	}
+
+	public Criterion<TableType, ModelType> atMost(
+			final Object value) {
+		return new AbstractCriterion(this.parent) {
+
+			@Override
+			boolean isEmpty() {
+				return value == null;
+			}
+
+			@Override
+			protected void build(QueryBuilder<TableType> builder) {
+				builder.column(
+						Expression.this.column,
+						" <= ?",
+						value);
+			}
+
+		};
+	}
+
+	public Criterion<TableType, ModelType> greaterThan(
+			final Object value) {
+		return new AbstractCriterion(this.parent) {
+
+			@Override
+			boolean isEmpty() {
+				return value == null;
+			}
+
+			@Override
+			protected void build(QueryBuilder<TableType> builder) {
+				builder.column(
+						Expression.this.column,
+						" > ?",
+						value);
+			}
+
+		};
+	}
+
+	public Criterion<TableType, ModelType> atLeast(
+			final Object value) {
+		return new AbstractCriterion(this.parent) {
+
+			@Override
+			boolean isEmpty() {
+				return value == null;
+			}
+
+			@Override
+			protected void build(QueryBuilder<TableType> builder) {
+				builder.column(
+						Expression.this.column,
+						" >= ?",
+						value);
+			}
+
+		};
+	}
+
 	public Criterion<TableType, ModelType> between(
 			final Object left,
 			final Object right) {
@@ -204,6 +284,18 @@ public class Expression<TableType extends Enum<?>, ModelType> {
 	public Criterion<TableType, ModelType> noneOf(
 			Object... values) {
 		return this.noneOf(Arrays.asList(values));
+	}
+
+	public Criterion<TableType, ModelType> evaluate(
+			final Database.Criterion<TableType> criterion) {
+		return new AbstractCriterion(this.parent) {
+
+			@Override
+			protected void build(QueryBuilder<TableType> builder) {
+				criterion.build(builder);
+			}
+
+		};
 	}
 
 }
