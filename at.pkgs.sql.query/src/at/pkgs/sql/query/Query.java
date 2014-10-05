@@ -216,14 +216,12 @@ implements Criterion.Parent<TableType, ModelType> {
 	}
 
 	public String buildSelectStatement() {
-		return this.buildSelectQuery().toString();
+		return this.buildSelectQuery().getQuery();
 	}
 
 	public ModelType selectOne(Connection connection) {
 		return this.limit(1).buildSelectQuery()
-				.execute()
-				.withModel(
-						this.table,
+				.execute(
 						this.model,
 						this.columns)
 				.asModel(connection);
@@ -235,9 +233,7 @@ implements Criterion.Parent<TableType, ModelType> {
 
 	public List<ModelType> selectAll(Connection connection) {
 		return this.buildSelectQuery()
-				.execute()
-				.withModel(
-						this.table,
+				.execute(
 						this.model,
 						this.columns)
 				.asModelList(connection);

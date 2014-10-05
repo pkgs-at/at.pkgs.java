@@ -19,6 +19,7 @@ package at.pkgs.sql.query;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.io.PrintStream;
 import at.pkgs.sql.query.dialect.Dialect;
 
@@ -44,6 +45,17 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 
 	@Override
 	public String toString() {
+		StringBuilder builder;
+
+		builder = new StringBuilder(this.builder);
+		builder.append('\n');
+		for (Object parameter : parameters)
+			builder.append(parameter).append(", ");
+		builder.append("(EOL)");
+		return builder.toString();
+	}
+
+	String getQuery() {
 		return this.builder.toString();
 	}
 
@@ -148,19 +160,29 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 
 	public QueryBuilder<TableType> dump(PrintStream stream) {
 		stream.println(this.toString());
-		for (Object parameter : this.parameters) {
-			stream.print(parameter);
-			stream.print(", ");
-		}
-		stream.println("(EOL)");
 		return this;
 	}
 
 	public QueryExecutor execute() {
 		return new QueryExecutor(
 				this.database,
-				this.toString(),
+				this.getQuery(),
 				this.getParameters());
+	}
+
+	public <ModelType> ModelExecutor<TableType, ModelType> execute(
+			Class<ModelType> model,
+			Iterable<TableType> columns) {
+		return this.execute().withModel(
+				table.getType(),
+				model,
+				columns);
+	}
+
+	public <ModelType> ModelExecutor<TableType, ModelType> execute(
+			Class<ModelType> model,
+			TableType... columns) {
+		return this.execute(model, Arrays.asList(columns));
 	}
 
 }

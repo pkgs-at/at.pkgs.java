@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 class TableDefinition<TableType> {
 
+	private final Class<TableType> type;
+
 	private final Database.Table annotation;
 
 	private final Map<TableType, ColumnDefinition<TableType>> columns;
@@ -34,6 +36,7 @@ class TableDefinition<TableType> {
 	TableDefinition(Class<TableType> type) {
 		Map<TableType, ColumnDefinition<TableType>> columns;
 
+		this.type = type;
 		this.annotation = type.getAnnotation(Database.Table.class);
 		if (this.annotation == null)
 			throw new Database.Exception(
@@ -45,6 +48,10 @@ class TableDefinition<TableType> {
 		this.columns = Collections.unmodifiableMap(columns);
 		this.mappers =
 				new ConcurrentHashMap<Class<?>, TableMapper<TableType, ?>>();
+	}
+
+	Class<TableType> getType() {
+		return this.type;
 	}
 
 	String getSchema() {
