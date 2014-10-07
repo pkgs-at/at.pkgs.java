@@ -70,7 +70,7 @@ public class Program {
 			limit(1);
 		}}).dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(new Preference.Query() {{
-			set(new Set() {{
+			set(new Values() {{
 				with(Preference.Table.Value, new Expression() {
 
 					@Override
@@ -131,6 +131,14 @@ public class Program {
 				.dumpIf(true, Database.DumpCollector.out)
 				.execute()
 				.asAffectedRows(connection);
+		database.query(new Preference.Query() {{
+			set(new Values() {{
+				with(Preference.Table.Key, "BB");
+				with(Preference.Table.Value, "BB value");
+				with(Preference.Table.CreatedAt, Database.ColumnValue.CurrentTimestamp);
+				with(Preference.Table.UpdatedAt, Database.ColumnValue.CurrentTimestamp);
+			}});
+		}}).dumpInsertIf(true, Database.DumpCollector.out).insert(connection);
 		for (Preference model : database.query(new Preference.Query() {{
 			
 		}}).select(connection)) {

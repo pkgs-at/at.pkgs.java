@@ -243,11 +243,6 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 		return this.tableName();
 	}
 
-	public QueryBuilder<TableType> defaultValue(TableType column) {
-		this.dialect.defaultValue(this, column);
-		return this;
-	}
-
 	public QueryBuilder<TableType> currentTimestamp() {
 		this.dialect.currentTimestamp(this.builder);
 		return this;

@@ -32,8 +32,8 @@ implements Criterion.Parent<TableType, ModelType> {
 
 	}
 
-	protected abstract class Set
-	extends Database.Set<TableType> {
+	protected abstract class Values
+	extends Database.Values<TableType> {
 
 		// nothing
 
@@ -68,7 +68,7 @@ implements Criterion.Parent<TableType, ModelType> {
 
 	private Iterable<TableType> columns;
 
-	private Database.Set<TableType> set;
+	private Database.Values<TableType> values;
 
 	private Criterion<TableType, ModelType> where;
 
@@ -85,7 +85,7 @@ implements Criterion.Parent<TableType, ModelType> {
 		this.model = model;
 		this.distinct = false;
 		this.columns = null;
-		this.set = null;
+		this.values = null;
 		this.where = null;
 		this.order = null;
 		this.offset = (-1);
@@ -113,21 +113,21 @@ implements Criterion.Parent<TableType, ModelType> {
 	}
 
 	public Query<TableType, ModelType> set(
-			Database.Set<TableType> set) {
-		this.set = set;
+			Database.Values<TableType> values) {
+		this.values = values;
 		return this;
 	}
 
 	public Query<TableType, ModelType> set(
 			TableType column, Object value) {
-		if (this.set == null) {
-			this.set = new Database.Set<TableType>() {
+		if (this.values == null) {
+			this.values = new Database.Values<TableType>() {
 
 				// nothing
 
 			};
 		}
-		this.set.with(column, value);
+		this.values.with(column, value);
 		return this;
 	}
 
@@ -273,6 +273,41 @@ implements Criterion.Parent<TableType, ModelType> {
 		return this.select(null);
 	}
 
+	QueryBuilder<TableType> buildInsertQuery() {
+		QueryBuilder<TableType> builder;
+		Dialect.InsertVisitor<TableType> visitor;
+
+		builder = this.database.newQueryBuilder(this.table);
+		visitor = this.database.getDialect().newInsertVisitor();
+		visitor.initialize(builder);
+		if (!visitor.insert())
+			builder.append("INSERT");
+		if (!visitor.into() && this.values != null)
+			this.values.buildIntoClause(builder, visitor);
+		if (!visitor.values() && this.values != null)
+			this.values.buildValuesClause(builder, visitor);
+		visitor.afterAll();
+		return builder;
+	}
+
+	public Query<TableType, ModelType> dumpInsertIf(
+			boolean enabled,
+			Database.DumpCollector sink) {
+		if (!enabled) return this;
+		this.buildInsertQuery().dumpIf(true, sink);
+		return this;
+	}
+
+	public int insert(Connection connection) {
+		return this.buildInsertQuery()
+				.execute()
+				.asAffectedRows(connection);
+	}
+
+	public int insert() {
+		return this.insert(null);
+	}
+
 	QueryBuilder<TableType> buildUpdateQuery() {
 		QueryBuilder<TableType> builder;
 		Dialect.UpdateVisitor<TableType> visitor;
@@ -284,8 +319,8 @@ implements Criterion.Parent<TableType, ModelType> {
 			builder.append("UPDATE");
 		if (!visitor.table())
 			builder.append(' ').qualifiedTableName();
-		if (!visitor.set() && this.set != null)
-			this.set.build(builder);
+		if (!visitor.set() && this.values != null)
+			this.values.buildSetClause(builder, visitor);
 		if (!visitor.where() && this.where != null)
 			this.where.build(builder, true);
 		visitor.afterAll();

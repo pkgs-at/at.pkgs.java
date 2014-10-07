@@ -73,6 +73,46 @@ public interface Dialect {
 
 	}
 
+	public static abstract class InsertVisitor<TableType extends Enum<?>> {
+
+		protected QueryBuilder<TableType> builder;
+
+		protected void initialize() {
+			// do nothing
+		}
+
+		public void initialize(
+				QueryBuilder<TableType> builder) {
+			this.builder = builder;
+			this.initialize();
+		}
+
+		public boolean insert() {
+			return false;
+		}
+
+		public boolean into() {
+			return false;
+		}
+
+		public boolean into(TableType column, Object value) {
+			return false;
+		}
+
+		public boolean values() {
+			return false;
+		}
+
+		public boolean values(TableType column, Object value) {
+			return false;
+		}
+
+		public void afterAll() {
+			// do nothing
+		}
+
+	}
+
 	public static abstract class UpdateVisitor<TableType extends Enum<?>> {
 
 		protected QueryBuilder<TableType> builder;
@@ -96,6 +136,10 @@ public interface Dialect {
 		}
 
 		public boolean set() {
+			return false;
+		}
+
+		public boolean set(TableType column, Object value) {
 			return false;
 		}
 
@@ -143,10 +187,6 @@ public interface Dialect {
 
 	public void appendIdentifier(StringBuilder builder, String name);
 
-	public <TableType extends Enum<?>> void defaultValue(
-			QueryBuilder<TableType> builder,
-			TableType column);
-
 	public void currentTimestamp(StringBuilder builder);
 
 	public void currentDate(StringBuilder builder);
@@ -155,6 +195,9 @@ public interface Dialect {
 
 	public <TableType extends Enum<?>>
 	SelectVisitor<TableType> newSelectVisitor();
+
+	public <TableType extends Enum<?>>
+	InsertVisitor<TableType> newInsertVisitor();
 
 	public <TableType extends Enum<?>>
 	UpdateVisitor<TableType> newUpdateVisitor();

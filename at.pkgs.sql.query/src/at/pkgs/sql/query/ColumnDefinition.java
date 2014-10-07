@@ -65,8 +65,18 @@ class ColumnDefinition<TableType> {
 			}
 
 			@Override
+			public boolean returningInserted() {
+				return false;
+			}
+
+			@Override
 			public Database.ColumnValue updateWith() {
 				return Database.ColumnValue.ModelValue;
+			}
+
+			@Override
+			public boolean returningUpdated() {
+				return false;
 			}
 
 		};

@@ -145,8 +145,6 @@ public class Database {
 
 		DefaultValue,
 
-		ReturnInserted,
-
 		CurrentTimestamp,
 
 		CurrentDate,
@@ -165,7 +163,11 @@ public class Database {
 
 		public ColumnValue insertWith() default ColumnValue.ModelValue;
 
+		public boolean returningInserted() default false;
+
 		public ColumnValue updateWith() default ColumnValue.ModelValue;
+
+		public boolean returningUpdated() default false;
 
 	}
 
@@ -184,8 +186,8 @@ public class Database {
 
 	}
 
-	public static abstract class Set<TableType extends Enum<?>>
-	extends SetClause<TableType> {
+	public static abstract class Values<TableType extends Enum<?>>
+	extends ValuesClause<TableType> {
 
 		// nothing
 

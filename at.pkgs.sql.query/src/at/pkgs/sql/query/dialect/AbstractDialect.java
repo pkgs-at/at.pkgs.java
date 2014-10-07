@@ -17,8 +17,6 @@
 
 package at.pkgs.sql.query.dialect;
 
-import at.pkgs.sql.query.QueryBuilder;
-
 public abstract class AbstractDialect implements Dialect {
 
 	protected char getIdentifierOpenCharactor() {
@@ -48,20 +46,17 @@ public abstract class AbstractDialect implements Dialect {
 		builder.append(close);
 	}
 
-	public <TableType extends Enum<?>> void defaultValue(
-			QueryBuilder<TableType> builder,
-			TableType column) {
-		builder.append("DEFAULT");
-	}
-
+	@Override
 	public void currentTimestamp(StringBuilder builder) {
 		builder.append("CURRENT_TIMESTAMP");
 	}
 
+	@Override
 	public void currentDate(StringBuilder builder) {
 		builder.append("CURRENT_DATE");
 	}
 
+	@Override
 	public void currentTime(StringBuilder builder) {
 		builder.append("CURRENT_TIME");
 	}
