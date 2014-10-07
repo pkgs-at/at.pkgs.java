@@ -24,7 +24,6 @@ abstract class ValuesClause<TableType extends Enum<?>> {
 			}
 			else if (this.value instanceof Database.ColumnValue) {
 				switch ((Database.ColumnValue)this.value) {
-				case AutoIncrement :
 				case DefaultValue :
 					builder.append(" DEFAULT");
 					break;
@@ -75,7 +74,6 @@ abstract class ValuesClause<TableType extends Enum<?>> {
 		first = true;
 		for (Entry entry : this.list) {
 			if (visitor.into(entry.column, entry.value)) continue;
-			if (entry.value == Database.ColumnValue.AutoIncrement) continue;
 			if (entry.value == Database.ColumnValue.DefaultValue) continue;
 			if (first) first = false;
 			else builder.append(", ");
@@ -93,7 +91,6 @@ abstract class ValuesClause<TableType extends Enum<?>> {
 		first = true;
 		for (Entry entry : this.list) {
 			if (visitor.values(entry.column, entry.value)) continue;
-			if (entry.value == Database.ColumnValue.AutoIncrement) continue;
 			if (entry.value == Database.ColumnValue.DefaultValue) continue;
 			if (first) first = false;
 			else builder.append(", ");

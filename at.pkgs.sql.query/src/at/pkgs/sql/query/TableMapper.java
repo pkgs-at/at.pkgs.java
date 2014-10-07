@@ -53,11 +53,14 @@ class TableMapper<TableType, ModelType> {
 				new LinkedHashMap
 				<TableType, ColumnMapper<TableType, ModelType>>();
 		for (TableType column : this.table.getColumns().keySet()) {
+			ColumnDefinition<TableType> definition;
 			ColumnMapper<TableType, ModelType> mapper;
-			mapper = new ColumnMapper<TableType, ModelType>(
-					this,
-					this.table.getColumn(column));
-			if (mapper.hasField()) columns.put(column, mapper);
+
+			definition = this.table.getColumn(column);
+			mapper = new ColumnMapper<TableType, ModelType>(this, definition);
+			if (!mapper.hasField()) continue;
+			columns.put(column, mapper);
+			
 		}
 		this.columns = Collections.unmodifiableMap(columns);
 	}
@@ -68,6 +71,15 @@ class TableMapper<TableType, ModelType> {
 
 	Map<TableType, ColumnMapper<TableType, ModelType>> getColumns() {
 		return this.columns;
+	}
+
+	ColumnMapper<TableType, ModelType> getColumn(TableType column) {
+		if (!this.columns.containsKey(column))
+			throw new Database.Exception(
+					"no mapping for %s in %s",
+					column,
+					this.type.getName());
+		return this.columns.get(column);
 	}
 
 	ModelType setValues(
@@ -91,8 +103,7 @@ class TableMapper<TableType, ModelType> {
 		columnIterator = columns.iterator();
 		valueIterator = values.iterator();
 		while (columnIterator.hasNext() && valueIterator.hasNext())
-			this.columns
-					.get(columnIterator.next())
+			this.getColumn(columnIterator.next())
 					.setValue(model, valueIterator.next());
 		return model;
 	}
@@ -108,7 +119,7 @@ class TableMapper<TableType, ModelType> {
 			values = new ArrayList<Object>();
 		}
 		for (TableType column : columns)
-			values.add(this.columns.get(column).getValue(model));
+			values.add(this.getColumn(column).getValue(model));
 		return values;
 	}
 

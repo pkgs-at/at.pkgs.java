@@ -17,6 +17,8 @@
 
 package at.pkgs.sql.query;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Collections;
@@ -31,10 +33,13 @@ class TableDefinition<TableType> {
 
 	private final Map<TableType, ColumnDefinition<TableType>> columns;
 
+	private final List<TableType> primaryKeys;
+
 	private final ConcurrentMap<Class<?>, TableMapper<TableType, ?>> mappers;
 
 	TableDefinition(Class<TableType> type) {
 		Map<TableType, ColumnDefinition<TableType>> columns;
+		List<TableType> primaryKeys;
 
 		this.type = type;
 		this.annotation = type.getAnnotation(Database.Table.class);
@@ -43,9 +48,16 @@ class TableDefinition<TableType> {
 					"table without Database.Table annotation: %s",
 					type.getName());
 		columns = new LinkedHashMap<TableType, ColumnDefinition<TableType>>();
-		for (TableType key : type.getEnumConstants())
-			columns.put(key, new ColumnDefinition<TableType>(this, key));
+		primaryKeys = new ArrayList<TableType>();
+		for (TableType column : type.getEnumConstants()) {
+			ColumnDefinition<TableType> definition;
+
+			definition = new ColumnDefinition<TableType>(this, column);
+			columns.put(column, definition);
+			if (definition.isPrimaryKey()) primaryKeys.add(column);
+		}
 		this.columns = Collections.unmodifiableMap(columns);
+		this.primaryKeys = Collections.unmodifiableList(primaryKeys);
 		this.mappers =
 				new ConcurrentHashMap<Class<?>, TableMapper<TableType, ?>>();
 	}
@@ -67,6 +79,10 @@ class TableDefinition<TableType> {
 
 	Map<TableType, ColumnDefinition<TableType>> getColumns() {
 		return this.columns;
+	}
+
+	List<TableType> getPrimaryKeys() {
+		return this.primaryKeys;
 	}
 
 	ColumnDefinition<TableType> getColumn(

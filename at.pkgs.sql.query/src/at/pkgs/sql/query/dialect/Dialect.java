@@ -185,6 +185,8 @@ public interface Dialect {
 
 	}
 
+	public boolean hasReturningSupport();
+
 	public void appendIdentifier(StringBuilder builder, String name);
 
 	public void currentTimestamp(StringBuilder builder);

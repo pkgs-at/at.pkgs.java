@@ -55,7 +55,7 @@ class ColumnDefinition<TableType> {
 			}
 
 			@Override
-			public boolean isPrimaryKey() {
+			public boolean primaryKey() {
 				return false;
 			}
 
@@ -65,17 +65,12 @@ class ColumnDefinition<TableType> {
 			}
 
 			@Override
-			public boolean returningInserted() {
-				return false;
-			}
-
-			@Override
 			public Database.ColumnValue updateWith() {
 				return Database.ColumnValue.ModelValue;
 			}
 
 			@Override
-			public boolean returningUpdated() {
+			public boolean returning() {
 				return false;
 			}
 
@@ -89,6 +84,22 @@ class ColumnDefinition<TableType> {
 
 	String getFieldName() {
 		return this.entry.name();
+	}
+
+	boolean isPrimaryKey() {
+		return this.annotation.primaryKey();
+	}
+
+	Database.ColumnValue getInsertWith() {
+		return this.annotation.insertWith();
+	}
+
+	Database.ColumnValue getUpdateWith() {
+		return this.annotation.updateWith();
+	}
+
+	boolean isReturning() {
+		return this.annotation.returning();
 	}
 
 }

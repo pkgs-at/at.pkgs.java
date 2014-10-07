@@ -20,6 +20,11 @@ package at.pkgs.sql.query.dialect;
 public class DerbyDialect extends AbstractDialect {
 
 	@Override
+	public boolean hasReturningSupport() {
+		return false;
+	}
+
+	@Override
 	protected char getIdentifierOpenCharactor() {
 		return '"';
 	}

@@ -22,6 +22,11 @@ import at.pkgs.sql.query.Database;
 public class SqlServerDialect extends AbstractDialect {
 
 	@Override
+	public boolean hasReturningSupport() {
+		return true;
+	}
+
+	@Override
 	protected char getIdentifierOpenCharactor() {
 		return '[';
 	}

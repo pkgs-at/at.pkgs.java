@@ -24,6 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.sql.Types;
@@ -139,8 +141,6 @@ public class Database {
 
 		ModelValue,
 
-		AutoIncrement,
-
 		KeepOriginal,
 
 		DefaultValue,
@@ -159,15 +159,13 @@ public class Database {
 
 		public String name();
 
-		public boolean isPrimaryKey() default false;
+		public boolean primaryKey() default false;
 
 		public ColumnValue insertWith() default ColumnValue.ModelValue;
 
-		public boolean returningInserted() default false;
-
 		public ColumnValue updateWith() default ColumnValue.ModelValue;
 
-		public boolean returningUpdated() default false;
+		public boolean returning() default false;
 
 	}
 
@@ -235,10 +233,31 @@ public class Database {
 
 	private final ConcurrentMap<Class<?>, TableDefinition<?>> tables;
 
+	private DumpCollector insertDumpCollector;
+
+	private DumpCollector updateDumpCollector;
+
+	private DumpCollector deleteDumpCollector;
+
 	public Database(Dialect dialect, DataSource source) {
 		this.dialect = dialect;
 		this.source = source;
 		this.tables = new ConcurrentHashMap<Class<?>, TableDefinition<?>>();
+		this.insertDumpCollector = null;
+		this.updateDumpCollector = null;
+		this.deleteDumpCollector = null;
+	}
+
+	public void setInsertDumpCollector(DumpCollector collector) {
+		this.insertDumpCollector = collector;
+	}
+
+	public void setUpdateDumpCollector(DumpCollector collector) {
+		this.updateDumpCollector = collector;
+	}
+
+	public void setDeleteDumpCollector(DumpCollector collector) {
+		this.deleteDumpCollector = collector;
 	}
 
 	Dialect getDialect() {
@@ -318,6 +337,58 @@ public class Database {
 		try {
 			statement = connection.prepareStatement(query);
 			return this.bindParameters(statement, parameters).executeUpdate();
+		}
+		catch (SQLException throwable) {
+			throw new Exception(throwable);
+		}
+		finally {
+			try {
+				if (statement != null) statement.close();
+				if (close) connection.close();
+			}
+			catch (SQLException throwable) {
+				throw new Exception(throwable);
+			}
+		}
+	}
+
+	public <TableType extends Enum<?>> List<List<Object>> executeGeneratedKeys(
+			Connection connection,
+			String query,
+			Iterable<Object> parameters,
+			Class<TableType> table,
+			Iterable<TableType> columns) {
+		boolean close;
+		PreparedStatement statement;
+
+		close = (connection == null);
+		statement = null;
+		if (connection == null) connection = this.getConnection();
+		try {
+			List<String> keys;
+			ResultSet result;
+			int length;
+			List<List<Object>> rows;
+
+			keys = new ArrayList<String>();
+			for (TableType column : columns)
+				keys.add(this.getTable(table).getColumn(column).getName());
+			statement = connection.prepareStatement(
+					query,
+					keys.toArray(new String[keys.size()]));
+			this.bindParameters(statement, parameters).executeUpdate();
+			result = statement.getGeneratedKeys();
+			length = result.getMetaData().getColumnCount();
+			rows = new ArrayList<List<Object>>();
+			while (result.next()) {
+				List<Object> row;
+
+				row = new ArrayList<Object>();
+				for (int index = 0; index < length;)
+					row.add(result.getObject(++ index));
+				rows.add(row);
+			}
+			return rows;
 		}
 		catch (SQLException throwable) {
 			throw new Exception(throwable);
@@ -445,6 +516,142 @@ public class Database {
 			String query,
 			Object parameters) {
 		return this.execute(query, Arrays.asList(parameters));
+	}
+
+	@SuppressWarnings("unchecked")
+	public <TableType extends Enum<?>, ModelType> int insert(
+			Connection connection,
+			Class<TableType> table,
+			ModelType model) {
+		Class<ModelType> type;
+		TableDefinition<TableType> definition;
+		TableMapper<TableType, ModelType> mapper;
+		Values<TableType> values;
+		List<TableType> returnings;
+		final Map<TableType, Object> primaryKeys;
+
+		type = (Class<ModelType>)model.getClass();
+		definition = this.getTable(table);
+		mapper = definition.getMapper(type);
+		values = new Values<TableType>() {
+
+			// nothing
+
+		};
+		returnings = new ArrayList<TableType>();
+		primaryKeys = new LinkedHashMap<TableType, Object>();
+		for (TableType column : definition.getPrimaryKeys())
+			primaryKeys.put(column, null);
+		for (TableType column : mapper.getColumns().keySet()) {
+			ColumnDefinition<TableType> columnDefinition;
+			ColumnValue value;
+
+			columnDefinition = definition.getColumn(column);
+			value = columnDefinition.getInsertWith();
+			switch (value) {
+			case ModelValue :
+				Object modelValue;
+
+				modelValue = mapper.getColumn(column).getValue(model);
+				values.with(column, modelValue);
+				if (!primaryKeys.containsKey(column)) break;
+				if (modelValue instanceof Null) break;
+				primaryKeys.put(column, modelValue);
+				break;
+			default :
+				values.with(column, value);
+				break;
+			}
+			if (columnDefinition.isReturning()) returnings.add(column);
+		}
+		if (returnings.size() <= 0) {
+			return this.query(table, model.getClass())
+					.set(values)
+					.dumpInsertIf(
+							this.insertDumpCollector != null,
+							this.insertDumpCollector)
+					.insert(connection);
+		}
+		else if (this.dialect.hasReturningSupport()) {
+			return this.query(table, model.getClass())
+					.columns(returnings)
+					.set(values)
+					.dumpInsertIf(
+							this.insertDumpCollector != null,
+							this.insertDumpCollector)
+					.buildInsertQuery()
+					.execute(type, returnings)
+					.asModel(connection, model) == null ? 0 : 1;
+		}
+		else {
+			boolean close;
+
+			close = (connection == null);
+			if (connection == null) connection = this.getConnection();
+			try {
+				List<TableType> generateds;
+
+				generateds = new ArrayList<TableType>();
+				for (TableType column : primaryKeys.keySet())
+					if (primaryKeys.get(column) == null)
+						generateds.add(column);
+				if (generateds.size() > 0) {
+					List<List<Object>> rows;
+
+					rows = this.query(table, model.getClass())
+							.set(values)
+							.dumpInsertIf(
+									this.insertDumpCollector != null,
+									this.insertDumpCollector)
+							.buildInsertQuery()
+							.execute(generateds)
+							.asGeneratedKeys(connection);
+					if (rows.size() <= 0) return rows.size();
+					for (int index = 0; index < generateds.size(); index ++)
+						primaryKeys.put(
+								generateds.get(index),
+								rows.get(0).get(index));
+				}
+				else {
+					int affected;
+
+					affected = this.query(table, model.getClass())
+							.set(values)
+							.dumpInsertIf(
+									this.insertDumpCollector != null,
+									this.insertDumpCollector)
+							.insert(connection);
+					if (affected < 1) return affected;
+				}
+				this.query(table, type)
+						.columns(returnings)
+						.where(new And<TableType, ModelType>() {{
+							for (TableType column : primaryKeys.keySet())
+								with(column).is(primaryKeys.get(column));
+						}})
+						.dumpSelectIf(
+								this.insertDumpCollector != null,
+								this.insertDumpCollector)
+						.buildSelectQuery()
+						.execute(type, returnings)
+						.asModel(connection, model);
+				return 1;
+			}
+			finally {
+				try {
+					if (close) connection.close();
+				}
+				catch (SQLException throwable) {
+					throw new Database.Exception(throwable);
+				}
+			}
+		}
+	}
+
+	public <TableType extends Enum<?>, ModelType> int insert(
+			Class<TableType> table,
+			ModelType model) {
+		return this.insert(null, table, model);
 	}
 
 }

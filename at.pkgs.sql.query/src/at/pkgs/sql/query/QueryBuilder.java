@@ -273,11 +273,23 @@ public final class QueryBuilder<TableType extends Enum<?>> {
 				this.getParameters());
 	}
 
+	public TableExecutor<TableType> execute(
+			Iterable<TableType> columns) {
+		return this.execute().withTable(
+				this.table.getType(),
+				columns);
+	}
+
+	public TableExecutor<TableType> execute(
+			TableType... columns) {
+		return this.execute(Arrays.asList(columns));
+	}
+
 	public <ModelType> ModelExecutor<TableType, ModelType> execute(
 			Class<ModelType> model,
 			Iterable<TableType> columns) {
 		return this.execute().withModel(
-				table.getType(),
+				this.table.getType(),
 				model,
 				columns);
 	}

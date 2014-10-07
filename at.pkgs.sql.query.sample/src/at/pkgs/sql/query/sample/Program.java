@@ -18,6 +18,9 @@ public class Program {
 		connection = DriverManager.getConnection(
 				"jdbc:derby:memory:test;create=true");
 		database = new Database(new DerbyDialect(), null);
+		database.setInsertDumpCollector(Database.DumpCollector.out);
+		database.setUpdateDumpCollector(Database.DumpCollector.out);
+		database.setDeleteDumpCollector(Database.DumpCollector.out);
 		database.query(Preference.Table.class, Preference.class)
 				.dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(Preference.Table.class, Preference.class)
@@ -99,18 +102,20 @@ public class Program {
 				.append("CREATE TABLE ")
 				.qualifiedTableName()
 				.append('(')
-				.column(Preference.Table.Key)
-				.append(" CHARACTER VARYING(255) NOT NULL")
-				.append(", ")
-				.column(Preference.Table.Value)
-				.append(" CHARACTER VARYING(4095) NOT NULL")
-				.append(", ")
-				.column(Preference.Table.CreatedAt)
-				.append(" TIMESTAMP NOT NULL")
-				.append(", ")
-				.column(Preference.Table.UpdatedAt)
-				.append(" TIMESTAMP NOT NULL")
-				.append(')')
+				.column(
+						Preference.Table.PreferenceId,
+						" INTEGER NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY(START WITH 1, INCREMENT BY 1),")
+				.column(
+						Preference.Table.Key,
+						" CHARACTER VARYING(255) NOT NULL,")
+				.column(
+						Preference.Table.Value,
+						" CHARACTER VARYING(4095) NOT NULL,")
+				.column(
+						Preference.Table.CreatedAt,
+						" TIMESTAMP NOT NULL,")
+				.column(Preference.Table.UpdatedAt,
+						" TIMESTAMP NOT NULL)")
 				.dumpIf(true, Database.DumpCollector.out)
 				.execute()
 				.asAffectedRows(connection);
@@ -139,6 +144,13 @@ public class Program {
 				with(Preference.Table.UpdatedAt, Database.ColumnValue.CurrentTimestamp);
 			}});
 		}}).dumpInsertIf(true, Database.DumpCollector.out).insert(connection);
+		Preference model0 = new Preference("KEY", "VALUE");
+		System.out.println(
+				database.insert(
+						connection,
+						Preference.Table.class,
+						model0));
+		System.out.println(model0);
 		for (Preference model : database.query(new Preference.Query() {{
 			
 		}}).select(connection)) {
