@@ -81,6 +81,23 @@ public class TableExecutor<TableType extends Enum<?>> {
 		return this.asResultSet(null);
 	}
 
+	public <ResultType> ResultType asScalar(
+			Connection connection,
+			Class<ResultType> type) {
+		return this.database.executeScalar(
+				connection,
+				type,
+				this.query,
+				this.parameters);
+	}
+
+	public <ResultType> ResultType asScalar(
+			Class<ResultType> type) {
+		return this.asScalar(
+				null,
+				type);
+	}
+
 	public <ModelType> ModelExecutor<TableType, ModelType> withModel(
 			Class<ModelType> model) {
 		return new ModelExecutor<TableType, ModelType> (

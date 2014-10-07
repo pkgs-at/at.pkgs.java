@@ -73,6 +73,13 @@ public class Program {
 			limit(1);
 		}}).dumpSelectIf(true, Database.DumpCollector.out);
 		database.query(new Preference.Query() {{
+		}}).dumpCountIf(true, Database.DumpCollector.out);
+		database.query(new Preference.Query() {{
+			distinct();
+			columns(Preference.Table.Value);
+			where(Preference.Table.Key).greaterThan("B");
+		}}).dumpCountIf(true, Database.DumpCollector.out);
+		database.query(new Preference.Query() {{
 			set(new Values() {{
 				with(Preference.Table.Value, new Expression() {
 

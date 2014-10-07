@@ -55,34 +55,4 @@ public class DerbyDialect extends AbstractDialect {
 		};
 	}
 
-	@Override
-	public <TableType extends Enum<?>>
-	InsertVisitor<TableType> newInsertVisitor() {
-		return new InsertVisitor<TableType>() {
-
-			// nothing
-
-		};
-	}
-
-	@Override
-	public <TableType extends Enum<?>>
-	UpdateVisitor<TableType> newUpdateVisitor() {
-		return new UpdateVisitor<TableType>() {
-
-			// nothing
-
-		};
-	}
-
-	@Override
-	public <TableType extends Enum<?>>
-	DeleteVisitor<TableType> newDeleteVisitor() {
-		return new DeleteVisitor<TableType>() {
-
-			// nothing
-
-		};
-	}
-
 }

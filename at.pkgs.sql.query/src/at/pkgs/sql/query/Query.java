@@ -229,30 +229,6 @@ implements Criterion.Parent<TableType, ModelType> {
 		return builder;
 	}
 
-	public Query<TableType, ModelType> dumpSelectOneIf(
-			boolean enabled,
-			Database.DumpCollector sink) {
-		int limit;
-
-		if (!enabled) return this;
-		limit = this.limit;
-		this.limit(1).buildSelectQuery().dumpIf(true, sink);
-		this.limit = limit;
-		return this;
-	}
-
-	public ModelType selectOne(Connection connection) {
-		return this.limit(1).buildSelectQuery()
-				.execute(
-						this.model,
-						this.columns)
-				.asModel(connection);
-	}
-
-	public ModelType selectOne() {
-		return this.selectOne(null);
-	}
-
 	public Query<TableType, ModelType> dumpSelectIf(
 			boolean enabled,
 			Database.DumpCollector sink) {
@@ -271,6 +247,85 @@ implements Criterion.Parent<TableType, ModelType> {
 
 	public List<ModelType> select() {
 		return this.select(null);
+	}
+
+	QueryBuilder<TableType> buildSelectOneQuery() {
+		int limit;
+
+		limit = this.limit;
+		try {
+			return this.limit(1).buildSelectQuery();
+		}
+		finally {
+			this.limit = limit;
+		}
+	}
+
+	public Query<TableType, ModelType> dumpSelectOneIf(
+			boolean enabled,
+			Database.DumpCollector sink) {
+		if (!enabled) return this;
+		this.buildSelectOneQuery().dumpIf(true, sink);
+		return this;
+	}
+
+	public ModelType selectOne(Connection connection) {
+		return this.buildSelectOneQuery()
+				.execute(
+						this.model,
+						this.columns)
+				.asModel(connection);
+	}
+
+	public ModelType selectOne() {
+		return this.selectOne(null);
+	}
+
+	QueryBuilder<TableType> buildCountQuery() {
+		QueryBuilder<TableType> builder;
+		Dialect.CountVisitor<TableType> visitor;
+
+		builder = this.database.newQueryBuilder(this.table);
+		visitor = this.database.getDialect().newCountVisitor();
+		visitor.initialize(builder, this.offset, this.limit);
+		if (!visitor.selectAll())
+			builder.append("SELECT ALL");
+		if (!visitor.count()) {
+			builder.append(" COUNT(");
+			if (!visitor.allOrDistinct())
+				builder.append(this.distinct ? "DISTINCT" : "ALL");
+			if (!visitor.columns()) {
+				if (this.columns == null)
+					builder.append(" *");
+				else
+					builder.append(' ').columns(this.columns);
+			}
+			builder.append(")");
+		}
+		if (!visitor.from())
+			builder.append(" FROM ").qualifiedTableName();
+		if (!visitor.where() && this.where != null)
+			this.where.build(builder, true);
+		visitor.afterAll();
+		return builder;
+	}
+
+	public Query<TableType, ModelType> dumpCountIf(
+			boolean enabled,
+			Database.DumpCollector sink) {
+		if (!enabled) return this;
+		this.buildCountQuery().dumpIf(true, sink);
+		return this;
+	}
+
+	public Long count(Connection connection) {
+		return this.buildCountQuery()
+				.execute()
+				.asScalar(connection, Long.class);
+	}
+
+	public Long count() {
+		return this.count(null);
 	}
 
 	QueryBuilder<TableType> buildInsertQuery() {

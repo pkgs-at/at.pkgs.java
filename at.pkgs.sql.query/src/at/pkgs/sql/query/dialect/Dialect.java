@@ -73,6 +73,52 @@ public interface Dialect {
 
 	}
 
+	public static abstract class CountVisitor<TableType extends Enum<?>> {
+
+		protected QueryBuilder<TableType> builder;
+
+		protected void initialize() {
+			// do nothing
+		}
+
+		public void initialize(
+				QueryBuilder<TableType> builder,
+				int offset,
+				int limit) {
+			this.builder = builder;
+			this.initialize();
+		}
+
+		public boolean selectAll() {
+			return false;
+		}
+
+		public boolean count() {
+			return false;
+		}
+
+		public boolean allOrDistinct() {
+			return false;
+		}
+
+		public boolean columns() {
+			return false;
+		}
+
+		public boolean from() {
+			return false;
+		}
+
+		public boolean where() {
+			return false;
+		}
+
+		public void afterAll() {
+			// do nothing
+		}
+
+	}
+
 	public static abstract class InsertVisitor<TableType extends Enum<?>> {
 
 		protected QueryBuilder<TableType> builder;
@@ -197,6 +243,9 @@ public interface Dialect {
 
 	public <TableType extends Enum<?>>
 	SelectVisitor<TableType> newSelectVisitor();
+
+	public <TableType extends Enum<?>>
+	CountVisitor<TableType> newCountVisitor();
 
 	public <TableType extends Enum<?>>
 	InsertVisitor<TableType> newInsertVisitor();

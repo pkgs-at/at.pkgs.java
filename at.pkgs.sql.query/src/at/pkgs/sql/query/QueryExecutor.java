@@ -60,6 +60,23 @@ public class QueryExecutor {
 		return this.asResultSet(null);
 	}
 
+	public <ResultType> ResultType asScalar(
+			Connection connection,
+			Class<ResultType> type) {
+		return this.database.executeScalar(
+				connection,
+				type,
+				this.query,
+				this.parameters);
+	}
+
+	public <ResultType> ResultType asScalar(
+			Class<ResultType> type) {
+		return this.asScalar(
+				null,
+				type);
+	}
+
 	public <TableType extends Enum<?>>
 	TableExecutor<TableType> withTable(
 			Class<TableType> table,

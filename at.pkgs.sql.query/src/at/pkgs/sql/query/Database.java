@@ -85,7 +85,7 @@ public class Database {
 
 	}
 
-	public enum Null {
+	public static enum Null {
 
 		BigDecimal(Types.NUMERIC),
 
@@ -170,7 +170,7 @@ public class Database {
 	}
 
 	@Table(name = "")
-	public enum EmptyTable {
+	public static enum EmptyTable {
 
 		// nothing
 
@@ -416,6 +416,37 @@ public class Database {
 		}
 		catch (SQLException throwable) {
 			throw new Exception(throwable);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public <ResultType> ResultType executeScalar(
+			Connection connection,
+			Class<ResultType> type,
+			String query,
+			Iterable<Object> parameters) {
+		boolean close;
+		ResultSet result;
+
+		close = (connection == null);
+		result = this.executeResultSet(connection, query, parameters);
+		try {
+			if (result.getMetaData().getColumnCount() < 1) return null;
+			if (!result.next()) return null;
+			return (ResultType)result.getObject(1);
+		}
+		catch (SQLException throwable) {
+			throw new Exception(throwable);
+		}
+		finally {
+			try {
+				connection = result.getStatement().getConnection();
+				result.getStatement().close();
+				if (close) connection.close();
+			}
+			catch (SQLException throwable) {
+				throw new Exception(throwable);
+			}
 		}
 	}
 

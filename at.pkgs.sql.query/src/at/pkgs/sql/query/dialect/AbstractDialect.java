@@ -61,4 +61,44 @@ public abstract class AbstractDialect implements Dialect {
 		builder.append("CURRENT_TIME");
 	}
 
+	@Override
+	public <TableType extends Enum<?>>
+	CountVisitor<TableType> newCountVisitor() {
+		return new CountVisitor<TableType>() {
+
+			// nothing
+
+		};
+	}
+
+	@Override
+	public <TableType extends Enum<?>>
+	InsertVisitor<TableType> newInsertVisitor() {
+		return new InsertVisitor<TableType>() {
+
+			// nothing
+
+		};
+	}
+
+	@Override
+	public <TableType extends Enum<?>>
+	UpdateVisitor<TableType> newUpdateVisitor() {
+		return new UpdateVisitor<TableType>() {
+
+			// nothing
+
+		};
+	}
+
+	@Override
+	public <TableType extends Enum<?>>
+	DeleteVisitor<TableType> newDeleteVisitor() {
+		return new DeleteVisitor<TableType>() {
+
+			// nothing
+
+		};
+	}
+
 }
