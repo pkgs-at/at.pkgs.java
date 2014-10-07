@@ -598,7 +598,7 @@ public class Database {
 				if (generateds.size() > 0) {
 					List<List<Object>> rows;
 
-					rows = this.query(table, model.getClass())
+					rows = this.query(table, type)
 							.set(values)
 							.dumpInsertIf(
 									this.insertDumpCollector != null,
@@ -615,7 +615,7 @@ public class Database {
 				else {
 					int affected;
 
-					affected = this.query(table, model.getClass())
+					affected = this.query(table, type)
 							.set(values)
 							.dumpInsertIf(
 									this.insertDumpCollector != null,
@@ -652,6 +652,162 @@ public class Database {
 			Class<TableType> table,
 			ModelType model) {
 		return this.insert(null, table, model);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <TableType extends Enum<?>, ModelType> int update(
+			Connection connection,
+			Class<TableType> table,
+			ModelType model) {
+		Class<ModelType> type;
+		TableDefinition<TableType> definition;
+		TableMapper<TableType, ModelType> mapper;
+		Values<TableType> values;
+		List<TableType> returnings;
+		final Map<TableType, Object> primaryKeys;
+		And<TableType, ModelType> where;
+
+		type = (Class<ModelType>)model.getClass();
+		definition = this.getTable(table);
+		mapper = definition.getMapper(type);
+		values = new Values<TableType>() {
+
+			// nothing
+
+		};
+		returnings = new ArrayList<TableType>();
+		primaryKeys = new LinkedHashMap<TableType, Object>();
+		for (TableType column : definition.getPrimaryKeys())
+			primaryKeys.put(column, null);
+		for (TableType column : mapper.getColumns().keySet()) {
+			ColumnDefinition<TableType> columnDefinition;
+			ColumnValue value;
+			Object modelValue;
+
+			columnDefinition = definition.getColumn(column);
+			value = columnDefinition.getUpdateWith();
+			modelValue = mapper.getColumn(column).getValue(model);
+			if (value == ColumnValue.ModelValue)
+				values.with(column, modelValue);
+			else
+				values.with(column, value);
+			if (columnDefinition.isReturning()) returnings.add(column);
+			if (!primaryKeys.containsKey(column)) continue;
+			if (modelValue instanceof Null) continue;
+			primaryKeys.put(column, modelValue);
+		}
+		where = new And<TableType, ModelType>() {{
+			for (TableType column : primaryKeys.keySet()) {
+				Object value;
+
+				value = primaryKeys.get(column);
+				if (value == null)
+					throw new Database.Exception(
+							"update key cannot be null: %s",
+							column);
+				with(column).is(value);
+			}
+		}};
+		if (returnings.size() <= 0) {
+			return this.query(table, type)
+					.set(values)
+					.where(where)
+					.dumpUpdateIf(
+							this.updateDumpCollector != null,
+							this.updateDumpCollector)
+					.update(connection);
+		}
+		else if (this.dialect.hasReturningSupport()) {
+			return this.query(table, type)
+					.columns(returnings)
+					.set(values)
+					.where(where)
+					.dumpUpdateIf(
+							this.updateDumpCollector != null,
+							this.updateDumpCollector)
+					.buildUpdateQuery()
+					.execute(type, returnings)
+					.asModel(connection, model) == null ? 0 : 1;
+		}
+		else {
+			boolean close;
+
+			close = (connection == null);
+			if (connection == null) connection = this.getConnection();
+			try {
+				int affected;
+
+				affected = this.query(table, type)
+						.set(values)
+						.where(where)
+						.dumpUpdateIf(
+								this.updateDumpCollector != null,
+								this.updateDumpCollector)
+						.update(connection);
+				if (affected < 1) return affected;
+				this.query(table, type)
+						.columns(returnings)
+						.where(where)
+						.dumpSelectIf(
+								this.updateDumpCollector != null,
+								this.updateDumpCollector)
+						.buildSelectQuery()
+						.execute(type, returnings)
+						.asModel(connection, model);
+				return affected;
+			}
+			finally {
+				try {
+					if (close) connection.close();
+				}
+				catch (SQLException throwable) {
+					throw new Database.Exception(throwable);
+				}
+			}
+		}
+	}
+
+	public <TableType extends Enum<?>, ModelType> int update(
+			Class<TableType> table,
+			ModelType model) {
+		return this.update(null,  table, model);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <TableType extends Enum<?>, ModelType> int delete(
+			Connection connection,
+			Class<TableType> table,
+			final ModelType model) {
+		Class<ModelType> type;
+		final TableDefinition<TableType> definition;
+		final TableMapper<TableType, ModelType> mapper;
+
+		type = (Class<ModelType>)model.getClass();
+		definition = this.getTable(table);
+		mapper = definition.getMapper(type);
+		return this.query(table, type)
+				.where(new And<TableType, ModelType>() {{
+					for (TableType column : definition.getPrimaryKeys()) {
+						Object value;
+
+						value = mapper.getColumn(column).getValue(model);
+						if (value == null || value instanceof Null)
+							throw new Database.Exception(
+									"delete key cannot be null: %s",
+									column);
+						with(column).is(value);
+					}
+				}})
+				.dumpDeleteIf(
+						this.deleteDumpCollector != null,
+						this.deleteDumpCollector)
+				.delete(connection);
+	}
+
+	public <TableType extends Enum<?>, ModelType> int delete(
+			Class<TableType> table,
+			ModelType model) {
+		return this.delete(table, model);
 	}
 
 }

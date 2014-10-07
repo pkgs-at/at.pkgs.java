@@ -151,6 +151,18 @@ public class Program {
 						Preference.Table.class,
 						model0));
 		System.out.println(model0);
+		Thread.sleep(1000L);
+		System.out.println(
+				database.update(
+						connection,
+						Preference.Table.class,
+						model0));
+		System.out.println(model0);
+		System.out.println(
+				database.delete(
+						connection,
+						Preference.Table.class,
+						model0));
 		for (Preference model : database.query(new Preference.Query() {{
 			
 		}}).select(connection)) {
