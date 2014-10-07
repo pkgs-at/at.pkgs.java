@@ -123,13 +123,17 @@ public interface Dialect {
 
 		protected QueryBuilder<TableType> builder;
 
+		protected Iterable<TableType> columns;
+
 		protected void initialize() {
 			// do nothing
 		}
 
 		public void initialize(
-				QueryBuilder<TableType> builder) {
+				QueryBuilder<TableType> builder,
+				Iterable<TableType> columns) {
 			this.builder = builder;
+			this.columns = columns;
 			this.initialize();
 		}
 
@@ -163,13 +167,17 @@ public interface Dialect {
 
 		protected QueryBuilder<TableType> builder;
 
+		protected Iterable<TableType> columns;
+
 		protected void initialize() {
 			// do nothing
 		}
 
 		public void initialize(
-				QueryBuilder<TableType> builder) {
+				QueryBuilder<TableType> builder,
+				Iterable<TableType> columns) {
 			this.builder = builder;
+			this.columns = columns;
 			this.initialize();
 		}
 

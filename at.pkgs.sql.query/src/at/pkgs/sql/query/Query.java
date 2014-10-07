@@ -334,7 +334,7 @@ implements Criterion.Parent<TableType, ModelType> {
 
 		builder = this.database.newQueryBuilder(this.table);
 		visitor = this.database.getDialect().newInsertVisitor();
-		visitor.initialize(builder);
+		visitor.initialize(builder, this.columns);
 		if (!visitor.insert())
 			builder.append("INSERT");
 		if (!visitor.into() && this.values != null)
@@ -369,7 +369,7 @@ implements Criterion.Parent<TableType, ModelType> {
 
 		builder = this.database.newQueryBuilder(this.table);
 		visitor = this.database.getDialect().newUpdateVisitor();
-		visitor.initialize(builder);
+		visitor.initialize(builder, this.columns);
 		if (!visitor.update())
 			builder.append("UPDATE");
 		if (!visitor.table())

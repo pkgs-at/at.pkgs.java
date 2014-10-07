@@ -9,7 +9,7 @@
 	<!-- others -->
 	<property name="javacexcludes" value="**/.svn"/>
 	<property name="javacdebug" value="true"/>
-	<property name="javactarget" value="1.7"/>
+	<property name="javactarget" value="1.6"/>
 	<!-- targets -->
 	<target name="build">
 		<mkdir dir="${tmpdir}"/>

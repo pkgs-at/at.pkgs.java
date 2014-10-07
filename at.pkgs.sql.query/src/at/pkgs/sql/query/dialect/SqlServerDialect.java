@@ -58,4 +58,50 @@ public class SqlServerDialect extends AbstractDialect {
 		};
 	}
 
+	@Override
+	public <TableType extends Enum<?>>
+	InsertVisitor<TableType> newInsertVisitor() {
+		return new InsertVisitor<TableType>() {
+
+			@Override
+			public boolean values() {
+				boolean first;
+
+				if (this.columns == null) return false;
+				this.builder.append(" OUTPUT");
+				first = true;
+				for (TableType column : this.columns) {
+					if (first) first = false;
+					else this.builder.append(',');
+					this.builder.append(" INSERTED.").column(column);
+				}
+				return false;
+			}
+
+		};
+	}
+
+	@Override
+	public <TableType extends Enum<?>>
+	UpdateVisitor<TableType> newUpdateVisitor() {
+		return new UpdateVisitor<TableType>() {
+
+			@Override
+			public boolean where() {
+				boolean first;
+
+				if (this.columns == null) return false;
+				this.builder.append(" OUTPUT");
+				first = true;
+				for (TableType column : this.columns) {
+					if (first) first = false;
+					else this.builder.append(',');
+					this.builder.append(" INSERTED.").column(column);
+				}
+				return false;
+			}
+
+		};
+	}
+
 }
