@@ -17,12 +17,10 @@
 
 package at.pkgs.sql.query.dialect;
 
-import at.pkgs.sql.query.Database;
-
 /**
- * Microsoft SQL Server dialect class for version >= SQL Server 2008.
+ * PostgreSQL dialect class for version >= 8.2.
  */
-public class SqlServerDialect extends AbstractDialect {
+public class PostgreSqlDialect extends AbstractDialect {
 
 	@Override
 	public boolean hasReturningSupport() {
@@ -31,12 +29,12 @@ public class SqlServerDialect extends AbstractDialect {
 
 	@Override
 	protected char getIdentifierOpenCharactor() {
-		return '[';
+		return '"';
 	}
 
 	@Override
 	protected char getIdentifierCloseCharactor() {
-		return ']';
+		return '"';
 	}
 
 	@Override
@@ -45,17 +43,15 @@ public class SqlServerDialect extends AbstractDialect {
 		return new SelectVisitor<TableType>() {
 
 			@Override
-			protected void initialize() {
-				if (this.offset > 0)
-					throw new Database.Exception(
-							"SqlServerDialect not support offset");
-			}
-
-			@Override
-			public boolean selectList() {
+			public void afterAll() {
 				if (this.limit > 0)
-					this.builder.append(" TOP(?)", this.limit);
-				return false;
+					this.builder.append(
+							" LIMIT ?",
+							this.limit);
+				if (this.offset > 0)
+					this.builder.append(
+							" OFFSET ?",
+							this.offset);
 			}
 
 		};
@@ -67,18 +63,17 @@ public class SqlServerDialect extends AbstractDialect {
 		return new InsertVisitor<TableType>() {
 
 			@Override
-			public boolean values() {
+			public void afterAll() {
 				boolean first;
 
-				if (this.columns == null) return false;
-				this.builder.append(" OUTPUT");
+				if (this.columns == null) return;
+				this.builder.append(" RETURNING ");
 				first = true;
 				for (TableType column : this.columns) {
 					if (first) first = false;
-					else this.builder.append(',');
-					this.builder.append(" INSERTED.").column(column);
+					else this.builder.append(", ");
+					this.builder.column(column);
 				}
-				return false;
 			}
 
 		};
@@ -90,18 +85,17 @@ public class SqlServerDialect extends AbstractDialect {
 		return new UpdateVisitor<TableType>() {
 
 			@Override
-			public boolean where() {
+			public void afterAll() {
 				boolean first;
 
-				if (this.columns == null) return false;
-				this.builder.append(" OUTPUT");
+				if (this.columns == null) return;
+				this.builder.append(" RETURNING ");
 				first = true;
 				for (TableType column : this.columns) {
 					if (first) first = false;
-					else this.builder.append(',');
-					this.builder.append(" INSERTED.").column(column);
+					else this.builder.append(", ");
+					this.builder.column(column);
 				}
-				return false;
 			}
 
 		};

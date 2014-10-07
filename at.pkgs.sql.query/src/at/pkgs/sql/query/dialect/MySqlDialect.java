@@ -18,9 +18,9 @@
 package at.pkgs.sql.query.dialect;
 
 /**
- * Apache Derby dialect class for version >= 10.5.
+ * Oracle MySQL dialect class for version >= 5.5.
  */
-public class DerbyDialect extends AbstractDialect {
+public class MySqlDialect extends AbstractDialect {
 
 	@Override
 	public boolean hasReturningSupport() {
@@ -29,12 +29,12 @@ public class DerbyDialect extends AbstractDialect {
 
 	@Override
 	protected char getIdentifierOpenCharactor() {
-		return '"';
+		return '`';
 	}
 
 	@Override
 	protected char getIdentifierCloseCharactor() {
-		return '"';
+		return '`';
 	}
 
 	@Override
@@ -46,13 +46,11 @@ public class DerbyDialect extends AbstractDialect {
 			public void afterAll() {
 				if (this.offset < 0 && this.limit < 0) return;
 				if (this.offset < 0) this.offset = 0;
+				if (this.limit <= 0) this.limit = Integer.MAX_VALUE;
 				this.builder.append(
-						" OFFSET ? ROWS",
+						" LIMIT ? OFFSET ?",
+						this.limit,
 						this.offset);
-				if (this.limit > 0)
-					this.builder.append(
-							" FETCH NEXT ? ROWS ONLY",
-							this.limit);
 			}
 
 		};

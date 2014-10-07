@@ -5,6 +5,8 @@ import java.sql.Connection;
 import at.pkgs.sql.query.Database;
 import at.pkgs.sql.query.QueryBuilder;
 import at.pkgs.sql.query.dialect.DerbyDialect;
+import at.pkgs.sql.query.dialect.PostgreSqlDialect;
+import at.pkgs.sql.query.dialect.MySqlDialect;
 import at.pkgs.sql.query.dialect.SqlServerDialect;
 import at.pkgs.sql.query.sample.Preference.Table;
 
@@ -177,6 +179,64 @@ public class Program {
 			System.out.println(model);
 		}
 		connection.close();
+		database = new Database(new PostgreSqlDialect(), null);
+		database.query(new Preference.Query() {{
+			set(new Values() {{
+				with(Preference.Table.Key, "KEY");
+				with(Preference.Table.Value, "VALUE");
+			}});
+			where(Preference.Table.PreferenceId).is(1);
+		}}).dumpSelectOneIf(true, Database.DumpCollector.out);
+		database.query(new Preference.Query() {{
+			set(new Values() {{
+				with(Preference.Table.Key, "KEY");
+				with(Preference.Table.Value, "VALUE");
+			}});
+			columns(
+					Preference.Table.PreferenceId,
+					Preference.Table.CreatedAt,
+					Preference.Table.UpdatedAt);
+		}}).dumpInsertIf(true, Database.DumpCollector.out);
+		database.query(new Preference.Query() {{
+			set(new Values() {{
+				with(Preference.Table.Key, "KEY");
+				with(Preference.Table.Value, "VALUE");
+			}});
+			where(Preference.Table.PreferenceId).is(1);
+			columns(
+					Preference.Table.PreferenceId,
+					Preference.Table.CreatedAt,
+					Preference.Table.UpdatedAt);
+		}}).dumpUpdateIf(true, Database.DumpCollector.out);
+		database = new Database(new MySqlDialect(), null);
+		database.query(new Preference.Query() {{
+			set(new Values() {{
+				with(Preference.Table.Key, "KEY");
+				with(Preference.Table.Value, "VALUE");
+			}});
+			where(Preference.Table.PreferenceId).is(1);
+		}}).dumpSelectOneIf(true, Database.DumpCollector.out);
+		database.query(new Preference.Query() {{
+			set(new Values() {{
+				with(Preference.Table.Key, "KEY");
+				with(Preference.Table.Value, "VALUE");
+			}});
+			columns(
+					Preference.Table.PreferenceId,
+					Preference.Table.CreatedAt,
+					Preference.Table.UpdatedAt);
+		}}).dumpInsertIf(true, Database.DumpCollector.out);
+		database.query(new Preference.Query() {{
+			set(new Values() {{
+				with(Preference.Table.Key, "KEY");
+				with(Preference.Table.Value, "VALUE");
+			}});
+			where(Preference.Table.PreferenceId).is(1);
+			columns(
+					Preference.Table.PreferenceId,
+					Preference.Table.CreatedAt,
+					Preference.Table.UpdatedAt);
+		}}).dumpUpdateIf(true, Database.DumpCollector.out);
 		database = new Database(new SqlServerDialect(), null);
 		database.query(new Preference.Query() {{
 			set(new Values() {{
