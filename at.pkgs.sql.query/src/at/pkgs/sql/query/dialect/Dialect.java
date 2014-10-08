@@ -33,7 +33,7 @@ public interface Dialect {
 			// do nothing
 		}
 
-		public void initialize(
+		public final void initialize(
 				QueryBuilder<TableType> builder,
 				int offset,
 				int limit) {
@@ -81,7 +81,7 @@ public interface Dialect {
 			// do nothing
 		}
 
-		public void initialize(
+		public final void initialize(
 				QueryBuilder<TableType> builder,
 				int offset,
 				int limit) {
@@ -129,7 +129,7 @@ public interface Dialect {
 			// do nothing
 		}
 
-		public void initialize(
+		public final void initialize(
 				QueryBuilder<TableType> builder,
 				Iterable<TableType> columns) {
 			this.builder = builder;
@@ -173,7 +173,7 @@ public interface Dialect {
 			// do nothing
 		}
 
-		public void initialize(
+		public final void initialize(
 				QueryBuilder<TableType> builder,
 				Iterable<TableType> columns) {
 			this.builder = builder;
@@ -215,7 +215,7 @@ public interface Dialect {
 			// do nothing
 		}
 
-		public void initialize(
+		public final void initialize(
 				QueryBuilder<TableType> builder) {
 			this.builder = builder;
 			this.initialize();
