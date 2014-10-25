@@ -39,9 +39,12 @@ public class ConfigurationManager extends AbstractManager {
 
 			file = this.getConfigurationFile("application.local.properties");
 			if (file.exists()) {
+				PropertiesConfiguration properties;
+
+				properties = new PropertiesConfiguration();
+				properties.setEncoding("UTF-8");
 				try {
-					this.configuration.addConfiguration(
-							new PropertiesConfiguration(file));
+					properties.load(file);
 				}
 				catch (ConfigurationException throwable) {
 					this.error(
@@ -50,15 +53,18 @@ public class ConfigurationManager extends AbstractManager {
 							file);
 					throw new RuntimeException(throwable);
 				}
+				this.configuration.addConfiguration(properties);
 			}
 		}
 		{
 			File file;
+			PropertiesConfiguration properties;
 
 			file = this.getConfigurationFile("application.properties");
+			properties = new PropertiesConfiguration();
+			properties.setEncoding("UTF-8");
 			try {
-				this.configuration.addConfiguration(
-						new PropertiesConfiguration(file));
+				properties.load(file);
 			}
 			catch (ConfigurationException throwable) {
 				this.error(
@@ -67,6 +73,7 @@ public class ConfigurationManager extends AbstractManager {
 						file);
 				throw new RuntimeException(throwable);
 			}
+			this.configuration.addConfiguration(properties);
 		}
 		this.configuration.addConfiguration(new SystemConfiguration());
 	}
@@ -74,12 +81,15 @@ public class ConfigurationManager extends AbstractManager {
 	protected File getConfigurationParameter() {
 		String value;
 
+		value = this.getApplication().getServletContext().getInitParameter(
+				"at.pkgs.web.duet.configuration");
+		if (value != null)
+			return new File(value);
 		value = this.getApplication().getProperty(
 				"configuration",
 				(String)null);
 		if (value != null)
-			return new File(
-					value);
+			return new File(value);
 		value = System.getProperty("at.pkgs.web.duet.configuration_root");
 		if (value != null)
 			return new File(

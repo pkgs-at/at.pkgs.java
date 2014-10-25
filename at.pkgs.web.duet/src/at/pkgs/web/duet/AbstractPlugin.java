@@ -100,9 +100,9 @@ public abstract class AbstractPlugin implements Loggable {
 
 	private final Logger logger = Logger.of(this).skip(1);
 
-	private final Mapping <Class<? extends PageHandler>> handlers;
+	protected final Mapping <Class<? extends PageHandler>> handlers;
 
-	private final Mapping <String> masterPages;
+	protected final Mapping <String> masterPages;
 
 	public AbstractPlugin() {
 		this.handlers = new Mapping<Class<? extends PageHandler>>();
