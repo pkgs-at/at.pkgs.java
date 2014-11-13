@@ -26,6 +26,7 @@ public class EncodingHelper {
 	public static String iso_2022_jp(String value) {
 		StringBuilder builder;
 
+		if (value == null) return null;
 		builder = new StringBuilder(value);
 		for (int index = 0; index < value.length(); index ++) {
 			switch (value.charAt(index)) {
@@ -58,6 +59,7 @@ public class EncodingHelper {
 	public static String windows_31j(String value) {
 		StringBuilder builder;
 
+		if (value == null) return null;
 		builder = new StringBuilder(value);
 		for (int index = 0; index < value.length(); index ++) {
 			switch (value.charAt(index)) {
@@ -88,6 +90,7 @@ public class EncodingHelper {
 	}
 
 	public static String normalize(String encoding, String value) {
+		if (encoding == null) return value;
 		if (value == null) return null;
 		switch (encoding) {
 		case EncodingHelper.ISO_2022_JP :
