@@ -29,7 +29,7 @@ public final class Message implements Serializable {
 
 	public static enum Encoding {
 
-		JAPANESE("ISO-2022-JP"),
+		JAPANESE(EncodingHelper.ISO_2022_JP),
 
 		UNKNOWN(null);
 
@@ -225,8 +225,12 @@ public final class Message implements Serializable {
 			message.addRecipient(
 					MimeMessage.RecipientType.BCC,
 					address.encode(this.encoding));
-		message.setSubject(this.subject, this.encoding);
-		message.setText(this.body, this.encoding);
+		message.setSubject(
+				EncodingHelper.normalize(this.encoding, this.subject),
+				this.encoding);
+		message.setText(
+				EncodingHelper.normalize(this.encoding, this.body),
+				this.encoding);
 		return message;
 	}
 

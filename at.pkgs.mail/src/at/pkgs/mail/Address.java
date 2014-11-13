@@ -63,7 +63,10 @@ public final class Address implements Serializable {
 
 	public InternetAddress encode(String encoding) throws MessagingException {
 		try {
-			return new InternetAddress(this.address, this.name, encoding);
+			return new InternetAddress(
+					this.address,
+					EncodingHelper.normalize(encoding, this.name),
+					encoding);
 		}
 		catch (IOException cause) {
 			throw new MessagingException("failed on encode address", cause);
