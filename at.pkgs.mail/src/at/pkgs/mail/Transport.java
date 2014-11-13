@@ -51,7 +51,7 @@ public final class Transport {
 					"true");
 			properties.setProperty(
 					"mail.smtp.ssl.enable",
-					"true");
+					Boolean.toString(Transport.this.secure));
 			properties.setProperty(
 					"mail.smtp.auth",
 					Transport.this.username != null ? "true" : "false");
