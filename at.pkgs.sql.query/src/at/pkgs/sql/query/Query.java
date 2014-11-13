@@ -20,7 +20,6 @@ package at.pkgs.sql.query;
 import java.util.List;
 import java.util.Arrays;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import at.pkgs.sql.query.dialect.Dialect;
 
 public abstract class Query<TableType extends Enum<?>, ModelType>
