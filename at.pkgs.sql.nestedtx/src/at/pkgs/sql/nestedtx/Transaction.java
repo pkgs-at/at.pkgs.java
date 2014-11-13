@@ -17,6 +17,7 @@
 
 package at.pkgs.sql.nestedtx;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 public class Transaction implements AutoCloseable{
@@ -43,6 +44,15 @@ public class Transaction implements AutoCloseable{
 		return builder.toString();
 	}
 
+	public Connection getConnection() {
+		try {
+			return this.moderator.getConnection();
+		}
+		catch (SQLException throwable) {
+			throw new NestedTransactionException(throwable);
+		}
+	}
+
 	public void commit() {
 		try {
 			this.moderator.commit();
@@ -61,7 +71,7 @@ public class Transaction implements AutoCloseable{
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		this.finish();
 	}
 

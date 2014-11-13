@@ -4,6 +4,7 @@
 		<ant antfile="../at.pkgs.logging/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.logging.slf4j/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.template/build.xml" inheritAll="false" />
+		<ant antfile="../at.pkgs.mail/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.sql.nestedtx/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.sql.query/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.web.http/build.xml" inheritAll="false" />

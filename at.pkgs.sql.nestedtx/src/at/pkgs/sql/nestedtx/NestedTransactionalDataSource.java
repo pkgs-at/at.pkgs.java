@@ -62,7 +62,7 @@ public class NestedTransactionalDataSource implements DataSource {
 						"Invalid thread context: Not original thread");
 		}
 
-		private NestedTransactionalConnection getConnection()
+		NestedTransactionalConnection getConnection()
 				throws SQLException {
 			this.ensureOriginalThread();
 			if (this.depth >= Moderator.ORIGINAL_DEPTH) {

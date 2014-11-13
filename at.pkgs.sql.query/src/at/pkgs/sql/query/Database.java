@@ -331,9 +331,12 @@ public class Database {
 		boolean close;
 		PreparedStatement statement;
 
-		close = (connection == null);
+		close = false;
 		statement = null;
-		if (connection == null) connection = this.getConnection();
+		if (connection == null) {
+			connection = this.getConnection();
+			close = true;
+		}
 		try {
 			statement = connection.prepareStatement(query);
 			return this.bindParameters(statement, parameters).executeUpdate();
@@ -361,9 +364,12 @@ public class Database {
 		boolean close;
 		PreparedStatement statement;
 
-		close = (connection == null);
+		close = false;
 		statement = null;
-		if (connection == null) connection = this.getConnection();
+		if (connection == null) {
+			connection = this.getConnection();
+			close = true;
+		}
 		try {
 			List<String> keys;
 			ResultSet result;
@@ -408,7 +414,6 @@ public class Database {
 			Connection connection,
 			String query,
 			Iterable<Object> parameters) {
-		if (connection == null) connection = this.getConnection();
 		try {
 			return this.bindParameters(
 					connection.prepareStatement(query),
@@ -428,9 +433,14 @@ public class Database {
 		boolean close;
 		ResultSet result;
 
-		close = (connection == null);
-		result = this.executeResultSet(connection, query, parameters);
+		close = false;
+		result = null;
+		if (connection == null) {
+			connection = this.getConnection();
+			close = true;
+		}
 		try {
+			result = this.executeResultSet(connection, query, parameters);
 			if (result.getMetaData().getColumnCount() < 1) return null;
 			if (!result.next()) return null;
 			return (ResultType)result.getObject(1);
@@ -440,8 +450,7 @@ public class Database {
 		}
 		finally {
 			try {
-				connection = result.getStatement().getConnection();
-				result.getStatement().close();
+				if (result != null) result.getStatement().close();
 				if (close) connection.close();
 			}
 			catch (SQLException throwable) {
@@ -461,11 +470,17 @@ public class Database {
 		boolean close;
 		ResultSet result;
 
-		close = (connection == null);
-		result = this.executeResultSet(connection, query, parameters);
+		close = false;
+		result = null;
+		if (connection == null) {
+			connection = this.getConnection();
+			close = true;
+		}
 		try {
 			TableMapper<TableType, ModelType> mapper;
 			int length;
+
+			result = this.executeResultSet(connection, query, parameters);
 			if (!result.next()) return null;
 			length = result.getMetaData().getColumnCount();
 			mapper = this.getTable(table).getMapper(type);
@@ -481,8 +496,7 @@ public class Database {
 		}
 		finally {
 			try {
-				connection = result.getStatement().getConnection();
-				result.getStatement().close();
+				if (result != null) result.getStatement().close();
 				if (close) connection.close();
 			}
 			catch (SQLException throwable) {
@@ -502,13 +516,18 @@ public class Database {
 		boolean close;
 		ResultSet result;
 
-		close = (connection == null);
-		result = this.executeResultSet(connection, query, parameters);
+		close = false;
+		result = null;
+		if (connection == null) {
+			connection = this.getConnection();
+			close = true;
+		}
 		try {
 			List<ModelType> list;
 			TableMapper<TableType, ModelType> mapper;
 			int length;
 
+			result = this.executeResultSet(connection, query, parameters);
 			list = new ArrayList<ModelType>();
 			length = result.getMetaData().getColumnCount();
 			mapper = this.getTable(table).getMapper(type);
@@ -527,8 +546,7 @@ public class Database {
 		}
 		finally {
 			try {
-				connection = result.getStatement().getConnection();
-				result.getStatement().close();
+				if (result != null) result.getStatement().close();
 				if (close) connection.close();
 			}
 			catch (SQLException throwable) {
@@ -617,8 +635,11 @@ public class Database {
 		else {
 			boolean close;
 
-			close = (connection == null);
-			if (connection == null) connection = this.getConnection();
+			close = false;
+			if (connection == null) {
+				connection = this.getConnection();
+				close = true;
+			}
 			try {
 				List<TableType> generateds;
 
@@ -670,7 +691,10 @@ public class Database {
 			}
 			finally {
 				try {
-					if (close) connection.close();
+					if (close) {
+						connection.close();
+						connection = null;
+					}
 				}
 				catch (SQLException throwable) {
 					throw new Database.Exception(throwable);
@@ -763,8 +787,11 @@ public class Database {
 		else {
 			boolean close;
 
-			close = (connection == null);
-			if (connection == null) connection = this.getConnection();
+			close = false;
+			if (connection == null) {
+				connection = this.getConnection();
+				close = true;
+			}
 			try {
 				int affected;
 
@@ -789,7 +816,10 @@ public class Database {
 			}
 			finally {
 				try {
-					if (close) connection.close();
+					if (close) {
+						connection.close();
+						connection = null;
+					}
 				}
 				catch (SQLException throwable) {
 					throw new Database.Exception(throwable);

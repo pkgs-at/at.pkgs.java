@@ -20,6 +20,7 @@ package at.pkgs.sql.query;
 import java.util.List;
 import java.util.Arrays;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import at.pkgs.sql.query.dialect.Dialect;
 
 public abstract class Query<TableType extends Enum<?>, ModelType>
@@ -292,12 +293,13 @@ implements Criterion.Parent<TableType, ModelType> {
 			builder.append("SELECT ALL");
 		if (!visitor.count()) {
 			builder.append(" COUNT(");
-			if (!visitor.allOrDistinct())
-				builder.append(this.distinct ? "DISTINCT" : "ALL");
-			if (!visitor.columns()) {
-				if (this.columns == null)
-					builder.append(" *");
-				else
+			if (this.columns == null) {
+				builder.append('*');
+			}
+			else {
+				if (!visitor.allOrDistinct())
+					builder.append(this.distinct ? "DISTINCT" : "ALL");
+				if (!visitor.columns())
 					builder.append(' ').columns(this.columns);
 			}
 			builder.append(")");
@@ -319,9 +321,15 @@ implements Criterion.Parent<TableType, ModelType> {
 	}
 
 	public Long count(Connection connection) {
-		return this.buildCountQuery()
+		Object value;
+
+		value = this.buildCountQuery()
 				.execute()
-				.asScalar(connection, Long.class);
+				.asScalar(connection, Object.class);
+		if (value instanceof Integer)
+			return ((Integer)value).longValue();
+		else
+			return (Long)value;
 	}
 
 	public Long count() {
