@@ -19,11 +19,19 @@ package at.pkgs.mail;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.io.Serializable;
+import java.io.OutputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import javax.activation.DataHandler;
 import javax.mail.Session;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeUtility;
 
 public final class Message implements Serializable {
 
@@ -45,6 +53,235 @@ public final class Message implements Serializable {
 
 	}
 
+	public static abstract class Part implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+
+		protected abstract MimeBodyPart encode(String encoding)
+				throws MessagingException;
+
+	}
+
+	public static class Parts extends Part {
+
+		private static final long serialVersionUID = 1L;
+
+		private final String subtype;
+
+		private final List<Part> parts;
+
+		public Parts(String subtype) {
+			this.subtype = subtype;
+			this.parts = new ArrayList<Part>();
+		}
+
+		public Parts part(Part part) {
+			this.parts.add(part);
+			return this;
+		}
+
+		protected MimeMultipart multipart(String encoding)
+				throws MessagingException {
+			MimeMultipart multipart;
+
+			multipart = new MimeMultipart(this.subtype);
+			for (Part part : this.parts)
+				multipart.addBodyPart(part.encode(encoding));
+			return multipart;
+		}
+
+		@Override
+		protected MimeBodyPart encode(String encoding)
+				throws MessagingException {
+			MimeBodyPart part;
+
+			part = new MimeBodyPart();
+			part.setContent(this.multipart(encoding));
+			return part;
+		}
+
+	}
+
+	public static class MixedParts extends Parts {
+
+		private static final long serialVersionUID = 1L;
+
+		public MixedParts() {
+			super("mixed");
+		}
+
+	}
+
+	public static class AlternativeParts extends Parts {
+
+		private static final long serialVersionUID = 1L;
+
+		public AlternativeParts() {
+			super("alternative");
+		}
+
+	}
+
+	public static class DigestParts extends Parts {
+
+		private static final long serialVersionUID = 1L;
+
+		public DigestParts() {
+			super("digest");
+		}
+
+	}
+
+	public static class ParallelParts extends Parts {
+
+		private static final long serialVersionUID = 1L;
+
+		public ParallelParts() {
+			super("parallel");
+		}
+
+	}
+
+	public static class RelatedParts extends Parts {
+
+		private static final long serialVersionUID = 1L;
+
+		public RelatedParts() {
+			super("related");
+		}
+
+	}
+
+	public static class MimePart extends Part {
+
+		private static final long serialVersionUID = 1L;
+
+		private final MimeBodyPart part;
+
+		public MimePart(MimeBodyPart part) {
+			this.part = part;
+		}
+
+		@Override
+		protected MimeBodyPart encode(String encoding)
+				throws MessagingException {
+			return this.part;
+		}
+
+	}
+
+	public static class TextPart extends Part {
+
+		private static final long serialVersionUID = 1L;
+
+		private final String text;
+
+		private final String subtype;
+
+		public TextPart(String text, String subtype) {
+			this.text = text;
+			this.subtype = subtype;
+		}
+
+		public TextPart(String text) {
+			this(text, "plain");
+		}
+
+		@Override
+		protected MimeBodyPart encode(String encoding)
+				throws MessagingException {
+			MimeBodyPart part;
+
+			part = new MimeBodyPart();
+			part.setText(
+					EncodingHelper.normalize(encoding, this.text),
+					encoding,
+					this.subtype);
+			return part;
+		}
+
+	}
+
+	public static class DataHandlerPart extends Part {
+
+		private static final long serialVersionUID = 1L;
+
+		private final DataHandler handler;
+
+		public DataHandlerPart(DataHandler handler) {
+			this.handler = handler;
+		}
+
+		protected void encode(String encoding, MimeBodyPart part)
+				throws MessagingException {
+			// do nothing
+		}
+
+		@Override
+		protected MimeBodyPart encode(String encoding)
+				throws MessagingException {
+			MimeBodyPart part;
+
+			part = new MimeBodyPart();
+			part.setDataHandler(this.handler);
+			this.encode(encoding, part);
+			return part;
+		}
+
+	}
+
+	public static class InlinePart extends DataHandlerPart {
+
+		private static final long serialVersionUID = 1L;
+
+		private final String contentId;
+
+		public InlinePart(String contentId, DataHandler handler) {
+			super(handler);
+			this.contentId = contentId;
+		}
+
+		@Override
+		protected void encode(String encoding, MimeBodyPart part)
+				throws MessagingException {
+			part.setDescription(MimeBodyPart.INLINE);
+			part.setContentID(this.contentId);
+		}
+
+	}
+
+	public static class AttachmentPart extends DataHandlerPart {
+
+		private static final long serialVersionUID = 1L;
+
+		private final String name;
+
+		public AttachmentPart(String name, DataHandler handler) {
+			super(handler);
+			this.name = name;
+		}
+
+		@Override
+		protected void encode(String encoding, MimeBodyPart part)
+				throws MessagingException {
+			String name;
+
+			try {
+				name = MimeUtility.encodeText(this.name, encoding, "B");
+			}
+			catch (UnsupportedEncodingException cause) {
+				throw new MessagingException(
+						String.format(
+								"failed on encode filename: %s",
+								this.name),
+						cause);
+			}
+			part.setDescription(MimeBodyPart.ATTACHMENT);
+			part.setFileName(name);
+		}
+
+	}
+
 	private static final long serialVersionUID = 1L;
 
 	private final String encoding;
@@ -59,7 +296,11 @@ public final class Message implements Serializable {
 
 	private String subject;
 
+	private Parts parts;
+
 	private String body;
+
+	private String subtype;
 
 	public Message(String encoding) {
 		this.encoding = encoding;
@@ -197,12 +438,23 @@ public final class Message implements Serializable {
 		return this;
 	}
 
-	public Message body(String body) {
-		this.body = body;
+	public Message parts(Parts parts) {
+		this.parts = parts;
 		return this;
 	}
 
-	public MimeMessage encode(Session session) throws MessagingException {
+	public Message body(String body, String subtype) {
+		this.body = body;
+		this.subtype = subtype;
+		return this;
+	}
+
+	public Message body(String body) {
+		return this.body(body, "plain");
+	}
+
+	public MimeMessage encode(Session session)
+			throws MessagingException {
 		MimeMessage message;
 
 		message = new MimeMessage(session);
@@ -228,10 +480,61 @@ public final class Message implements Serializable {
 		message.setSubject(
 				EncodingHelper.normalize(this.encoding, this.subject),
 				this.encoding);
-		message.setText(
-				EncodingHelper.normalize(this.encoding, this.body),
-				this.encoding);
+		if (this.parts != null)
+			message.setContent(
+					this.parts.multipart(this.encoding));
+		else
+			message.setText(
+					EncodingHelper.normalize(this.encoding, this.body),
+					this.encoding,
+					this.subtype);
 		return message;
+	}
+
+	public void writeTo(OutputStream output)
+			throws IOException, MessagingException {
+		this.encode(Session.getInstance(new Properties())).writeTo(output);
+	}
+
+	public static void main(String[] arguments)
+			throws IOException, MessagingException {
+		System.out.println("========");
+		System.out.println();
+		new Message(Encoding.JAPANESE)
+				.from("from@example.com", "送信者")
+				.subject("テスト")
+				.body("このメールはテストです。", "html")
+				.writeTo(System.out);
+		System.out.println();
+		System.out.println("========");
+		System.out.println();
+		new Message(Encoding.JAPANESE)
+				.from("from@example.com", "送信者")
+				.subject("テスト")
+				.parts(new MixedParts()
+						.part(new TextPart(
+								"パート1"))
+						.part(new TextPart(
+								"パート2",
+								"xml"))
+						.part(new InlinePart(
+								"content3",
+								new DataHandler(
+										"パート3",
+										"text/css")))
+						.part(new AttachmentPart(
+								"日本語",
+								new DataHandler(
+										"パート4",
+										"text/plain; charset=iso-2022-jp")))
+						.part(new AttachmentPart(
+								"日本語",
+								new DataHandler(
+										"パート5",
+										"application/zip"))))
+				.writeTo(System.out);
+		System.out.println();
+		System.out.println("========");
 	}
 
 }
