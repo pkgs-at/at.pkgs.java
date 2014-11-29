@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project default="build">
 	<target name="build">
+		<ant antfile="../at.pkgs.fatjar/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.logging/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.logging.slf4j/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.template/build.xml" inheritAll="false" />
