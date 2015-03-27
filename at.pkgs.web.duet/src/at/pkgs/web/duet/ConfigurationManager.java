@@ -82,6 +82,11 @@ public class ConfigurationManager extends AbstractManager {
 		String value;
 
 		value = this.getApplication().getServletContext().getInitParameter(
+				"at.pkgs.web.duet.configuration:" +
+				this.getApplication().getServletContext().getContextPath());
+		if (value != null)
+			return new File(value);
+		value = this.getApplication().getServletContext().getInitParameter(
 				"at.pkgs.web.duet.configuration");
 		if (value != null)
 			return new File(value);
@@ -90,14 +95,18 @@ public class ConfigurationManager extends AbstractManager {
 				(String)null);
 		if (value != null)
 			return new File(value);
+		value = System.getProperty(
+				"at.pkgs.web.duet.configuration:" +
+				this.getApplication().getServletContext().getContextPath());
+		if (value != null)
+			return new File(value);
 		value = System.getProperty("at.pkgs.web.duet.configuration_root");
 		if (value != null)
 			return new File(
 					value,
 					this.getApplication().getClass().getPackage().getName());
-		else
-			return new File(
-					this.getServletContext().getRealPath("/WEB-INF"));
+		return new File(
+				this.getServletContext().getRealPath("/WEB-INF"));
 	}
 
 	public File getConfigurationDirectory() {

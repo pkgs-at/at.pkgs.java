@@ -20,6 +20,8 @@ package at.pkgs.web.duet;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import javax.servlet.ServletException;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.CompositeConfiguration;
 import at.pkgs.logging.Logger;
 import at.pkgs.web.page.PageHandler;
 import at.pkgs.web.page.PageRequest;
@@ -110,6 +112,19 @@ extends PageHandler implements Loggable {
 
 	public Pluggable getPluggable() {
 		return this.pluggable;
+	}
+
+	public Configuration getConfiguration(String prefix) {
+		CompositeConfiguration configuration;
+
+		configuration = new CompositeConfiguration();
+		configuration.addConfiguration(
+				this.getApplication().getConfigurationManager().get(
+						prefix + "." + this.pluggable.getName()));
+		configuration.addConfiguration(
+				this.getApplication().getConfigurationManager().get(
+						prefix));
+		return configuration;
 	}
 
 	@SuppressWarnings("unchecked")

@@ -22,13 +22,40 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class LoggerFactory {
 
-	private static final String CLASS_FOR_SLF4J =
-			"org.slf4j.LoggerFactory";
+	private static class Solid {
 
-	private static final String FACTORY_FOR_SLF4J =
-			"at.pkgs.logging.slf4j.SolidSinkFactory";
+		private final String factory;
 
-	private static final LoggerFactory instance = new LoggerFactory();
+		private final String[] requireds;
+
+		private Solid(String factory, String... requireds) {
+			this.factory = factory;
+			this.requireds = requireds;
+		}
+
+		private SinkFactory load() {
+			try {
+				for (String required : this.requireds)
+					Class.forName(required);
+				return (SinkFactory)Class.forName(this.factory).newInstance();
+			}
+			catch (Exception ignored) {
+				return null;
+			}
+		}
+
+	}
+
+	private static final Solid[] SOLIDS = {
+		new Solid(
+				"at.pkgs.logging.log4j.SolidSinkFactory",
+				"org.apache.log4j.LogManager"),
+		new Solid(
+				"at.pkgs.logging.slf4j.SolidSinkFactory",
+				"org.slf4j.LoggerFactory"),
+	};
+
+	private static final LoggerFactory INSTANCE = new LoggerFactory();
 
 	private final SinkFactory factory;
 
@@ -39,15 +66,13 @@ public final class LoggerFactory {
 	private LoggerFactory() {
 		SinkFactory factory;
 
-		try {
-			Class.forName(CLASS_FOR_SLF4J);
-			factory = (SinkFactory)Class
-					.forName(FACTORY_FOR_SLF4J)
-					.newInstance();
+		factory = null;
+		for (Solid solid : LoggerFactory.SOLIDS) {
+			factory = solid.load();
+			if (factory != null) break;
 		}
-		catch (Exception ignored) {
+		if (factory == null)
 			factory = new at.pkgs.logging.pseudo.SolidSinkFactory();
-		}
 		this.factory = factory;
 		this.logger = new ConcurrentHashMap<String, Logger>();
 		this.depth = 0;
@@ -76,7 +101,19 @@ public final class LoggerFactory {
 	}
 
 	public static LoggerFactory get() {
-		return instance;
+		return LoggerFactory.INSTANCE;
+	}
+
+	public static Logger get(String name) {
+		return LoggerFactory.get().logger(name);
+	}
+
+	public static Logger get(Class<?> type) {
+		return LoggerFactory.get(type.getName());
+	}
+
+	public static Logger get(Object object) {
+		return LoggerFactory.get(object.getClass());
 	}
 
 }
