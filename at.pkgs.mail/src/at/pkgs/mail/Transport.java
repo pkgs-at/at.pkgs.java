@@ -32,28 +32,30 @@ public final class Transport {
 
 		protected Connection() throws MessagingException {
 			Properties properties;
+			String protocol;
 
 			properties = new Properties();
+			protocol = Transport.this.secure ? "smtps" : "smtp";
 			properties.setProperty(
 					"mail.transport.protocol",
-					Transport.this.secure ? "smtps" : "smtp");
+					protocol);
 			properties.setProperty(
-					"mail.smtp.host",
+					"mail." + protocol + ".host",
 					Transport.this.hostname);
 			properties.setProperty(
-					"mail.smtp.port",
+					"mail." + protocol + ".port",
 					Integer.toString(Transport.this.port, 10));
 			properties.setProperty(
-					"mail.smtp.connectiontimeout",
+					"mail." + protocol + ".connectiontimeout",
 					Long.toString(Transport.this.timeout, 10));
 			properties.setProperty(
-					"mail.smtp.starttls.enable",
+					"mail." + protocol + ".starttls.enable",
 					"true");
 			properties.setProperty(
-					"mail.smtp.ssl.enable",
+					"mail." + protocol + ".ssl.enable",
 					Boolean.toString(Transport.this.secure));
 			properties.setProperty(
-					"mail.smtp.auth",
+					"mail." + protocol + ".auth",
 					Transport.this.username != null ? "true" : "false");
 			this.session = Session.getInstance(properties);
 			this.transport = this.session.getTransport();

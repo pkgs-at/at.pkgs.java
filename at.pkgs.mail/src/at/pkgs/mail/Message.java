@@ -21,10 +21,17 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.io.Serializable;
+import java.io.File;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.activation.URLDataSource;
 import javax.mail.Session;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
@@ -261,6 +268,10 @@ public final class Message implements Serializable {
 			this.name = name;
 		}
 
+		public AttachmentPart(DataHandler handler) {
+			this(handler.getName(), handler);
+		}
+
 		@Override
 		protected void encode(String encoding, MimeBodyPart part)
 				throws MessagingException {
@@ -280,6 +291,43 @@ public final class Message implements Serializable {
 			part.setFileName(name);
 		}
 
+	}
+
+	public static DataHandler newDataHandler(File file) {
+		return new DataHandler(new FileDataSource(file));
+	}
+
+	public static DataHandler newDataHandler(URL url) {
+		return new DataHandler(new URLDataSource(url));
+	}
+
+	public static DataHandler newDataHandler(
+			final String contentType,
+			final String name,
+			final byte[] content) {
+		return new DataHandler(new DataSource() {
+
+			@Override
+			public String getContentType() {
+				return contentType;
+			}
+
+			@Override
+			public String getName() {
+				return name;
+			}
+
+			@Override
+			public InputStream getInputStream() {
+				return new ByteArrayInputStream(content);
+			}
+
+			@Override
+			public OutputStream getOutputStream() {
+				throw new UnsupportedOperationException();
+			}
+
+		});
 	}
 
 	private static final long serialVersionUID = 1L;
