@@ -397,7 +397,7 @@ public abstract class AbstractHandler {
 						parameters));
 	}
 
-	public void adSuccessMessage(
+	public void addSuccessMessage(
 			String text) {
 		this.addMessage(
 				new Message(

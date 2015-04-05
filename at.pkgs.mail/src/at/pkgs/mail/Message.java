@@ -288,6 +288,8 @@ public final class Message implements Serializable {
 
 	private Address from;
 
+	private Address replyTo;
+
 	private final List<Address> to;
 
 	private final List<Address> cc;
@@ -325,6 +327,10 @@ public final class Message implements Serializable {
 		return this.from;
 	}
 
+	public Address getReplyTo() {
+		return this.replyTo;
+	}
+
 	public List<Address> getTo() {
 		return this.to;
 	}
@@ -356,6 +362,19 @@ public final class Message implements Serializable {
 
 	public Message from(String address) {
 		return this.from(new Address(address));
+	}
+
+	public Message replyTo(Address replyTo) {
+		this.replyTo = replyTo;
+		return this;
+	}
+
+	public Message replyTo(String address, String name) {
+		return this.replyTo(new Address(address, name));
+	}
+
+	public Message replyTo(String address) {
+		return this.replyTo(new Address(address));
 	}
 
 	public Message to(Address to) {
@@ -464,6 +483,12 @@ public final class Message implements Serializable {
 			address = this.from.encode(this.encoding);
 			message.setFrom(address);
 			message.setSender(address);
+		}
+		if (this.replyTo != null) {
+			InternetAddress address;
+
+			address = this.replyTo.encode(this.encoding);
+			message.setReplyTo(new InternetAddress[] { address });
 		}
 		for (Address address : this.to)
 			message.addRecipient(
