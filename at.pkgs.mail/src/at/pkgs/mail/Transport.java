@@ -18,11 +18,59 @@
 package at.pkgs.mail;
 
 import java.util.Properties;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.SSLContext;
 import javax.mail.Session;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 
+
 public final class Transport {
+
+	public static class PseudoTrustManager implements X509TrustManager {
+
+		private static final X509Certificate[] EMPTY_CERTIFICATES =
+				new X509Certificate[] {};
+
+		@Override
+		public void checkClientTrusted(
+				X509Certificate[] certificates,
+				String type) {
+			// do nothing
+		}
+
+		@Override
+		public void checkServerTrusted(
+				X509Certificate[] certificates,
+				String type) {
+			// do nothing
+		}
+
+		@Override
+		public X509Certificate[] getAcceptedIssuers() {
+			return PseudoTrustManager.EMPTY_CERTIFICATES;
+		}
+
+		private static final SSLContext SSL_CONTEXT;
+
+		static {
+			SSLContext context;
+
+			try {
+				context = SSLContext.getInstance("TLS");
+				context.init(
+						null,
+						new X509TrustManager[] { new PseudoTrustManager() },
+						null);
+			}
+			catch (Exception cause) {
+				throw new RuntimeException(cause);
+			}
+			SSL_CONTEXT = context;
+		}
+
+	}
 
 	public class Connection implements AutoCloseable {
 
@@ -57,6 +105,10 @@ public final class Transport {
 			properties.setProperty(
 					"mail." + protocol + ".auth",
 					Transport.this.username != null ? "true" : "false");
+			if (!Transport.this.certificate)
+				properties.put(
+						"mail." + protocol + ".ssl.socketFactory",
+						PseudoTrustManager.SSL_CONTEXT.getSocketFactory());
 			this.session = Session.getInstance(properties);
 			this.transport = this.session.getTransport();
 			this.transport.connect(
@@ -87,6 +139,8 @@ public final class Transport {
 
 	private boolean secure;
 
+	private boolean certificate;
+
 	private String username;
 
 	private String password;
@@ -97,9 +151,15 @@ public final class Transport {
 		this.hostname = hostname;
 		this.port = port;
 		this.secure = secure;
+		this.certificate = true;
 		this.username = null;
 		this.password = null;
 		this.timeout = 30 * 1000L;
+	}
+
+	public Transport certificate(boolean certificate) {
+		this.certificate = certificate;
+		return this;
 	}
 
 	public Transport authenticate(String username, String password) {

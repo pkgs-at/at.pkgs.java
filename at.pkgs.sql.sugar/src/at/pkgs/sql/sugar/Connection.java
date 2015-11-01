@@ -41,6 +41,10 @@ implements java.sql.Connection, DatabaseObjectWrapper<java.sql.Connection> {
 		this.transactional = true;
 	}
 
+	boolean isTransactional() {
+		return this.transactional;
+	}
+
 	@Override
 	public boolean isWrapperFor(Class<?> type) {
 		if (type.isAssignableFrom(this.getClass()))
