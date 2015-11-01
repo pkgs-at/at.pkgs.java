@@ -98,13 +98,13 @@ public final class Transport {
 					Long.toString(Transport.this.timeout, 10));
 			properties.setProperty(
 					"mail." + protocol + ".starttls.enable",
-					"true");
+					Boolean.toString(true));
 			properties.setProperty(
 					"mail." + protocol + ".ssl.enable",
 					Boolean.toString(Transport.this.secure));
 			properties.setProperty(
 					"mail." + protocol + ".auth",
-					Transport.this.username != null ? "true" : "false");
+					Boolean.toString(Transport.this.username != null));
 			if (!Transport.this.certificate)
 				properties.put(
 						"mail." + protocol + ".ssl.socketFactory",
