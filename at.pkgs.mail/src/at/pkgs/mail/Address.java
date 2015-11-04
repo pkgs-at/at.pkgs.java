@@ -17,8 +17,10 @@
 
 package at.pkgs.mail;
 
+import java.util.regex.Pattern;
 import java.io.Serializable;
 import java.io.IOException;
+import java.net.IDN;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 
@@ -26,12 +28,25 @@ public final class Address implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
+	private static final Pattern ADDRESS_DELIMITOR =
+		Pattern.compile(Pattern.quote("@"));
+
 	private String address;
 
 	private String name;
 
 	public Address(String address, String name) {
-		this.address = address;
+		String[] parts;
+		StringBuilder builder;
+
+		parts = Address.ADDRESS_DELIMITOR.split(address, 2);
+		if (parts.length != 2)
+			throw new IllegalArgumentException("invalid address");
+		builder = new StringBuilder();
+		builder.append(IDN.toASCII(parts[0], IDN.ALLOW_UNASSIGNED));
+		builder.append('@');
+		builder.append(IDN.toASCII(parts[1], IDN.ALLOW_UNASSIGNED));
+		this.address = builder.toString();
 		this.name = name;
 	}
 
@@ -71,6 +86,11 @@ public final class Address implements Serializable {
 		catch (IOException cause) {
 			throw new MessagingException("failed on encode address", cause);
 		}
+	}
+
+	public static void main(String[] arguments) {
+		System.out.println(new Address("test@example.com").getAddress());
+		System.out.println(new Address("テスト@日本語domain.jp").getAddress());
 	}
 
 }
