@@ -1,6 +1,6 @@
 *.class
 /.metadata
-/.recommenders
+#/.recommenders
 /RemoteSystemsTempFiles
 
 /at.pkgs.sql.query.sample/derby.log
