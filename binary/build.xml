@@ -16,5 +16,6 @@
 		<ant antfile="../at.pkgs.web.trio/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.jetty.logging/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.jetty.logging.log4j/build.xml" inheritAll="false" />
+		<ant antfile="../at.pkgs.tool.imporg/build.xml" inheritAll="false" />
 	</target>
 </project>
