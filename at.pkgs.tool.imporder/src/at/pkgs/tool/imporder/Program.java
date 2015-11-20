@@ -238,12 +238,16 @@ public class Program implements Runnable {
 		for (File path : this.includes) this.walk(path);
 		unused = new LinkedHashSet<String>(this.dictionary);
 		unused.removeAll(this.imports);
-		System.out.println("# unused");
-		for (String target : unused) System.out.println(target);
 		unlisted = new TreeSet<String>(this.imports);
 		unlisted.removeAll(this.dictionary);
-		System.out.println("# unlisted");
-		for (String target : unlisted) System.out.println(target);
+		if (!unused.isEmpty()) {
+			System.out.println("# unused ###########");
+			for (String target : unused) System.out.println(target);
+		}
+		if (!unlisted.isEmpty()) {
+			System.out.println("# unlisted #########");
+			for (String target : unlisted) System.out.println(target);
+		}
 	}
 
 	public static void usage(PrintStream output) {
