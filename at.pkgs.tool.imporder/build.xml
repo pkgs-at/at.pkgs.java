@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project default="build">
 	<!-- project settings -->
-	<property name="name" value="at.pkgs.tool.imporg"/>
+	<property name="name" value="at.pkgs.tool.imporder"/>
 	<property name="version" value="1.0.0"/>
 	<!-- directories -->
 	<property name="bindir" value="./bin"/>
@@ -30,7 +30,7 @@
 		<jar destfile="../binary/${name}-${version}.jar">
 			<fileset dir="${tmpdir}"/>
 			<manifest>
-				<attribute name="Main-Class" value="at.pkgs.tool.imporg.Program"/>
+				<attribute name="Main-Class" value="at.pkgs.tool.imporder.Program"/>
 			</manifest>
 		</jar>
 		<jar destfile="../binary/sources/${name}-${version}-sources.jar">

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package at.pkgs.tool.imporg;
+package at.pkgs.tool.imporder;
 
 import java.util.List;
 import java.util.ArrayList;
