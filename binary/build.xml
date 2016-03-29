@@ -10,6 +10,7 @@
 		<ant antfile="../at.pkgs.mail/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.sql.nestedtx/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.sql.query/build.xml" inheritAll="false" />
+		<ant antfile="../at.pkgs.sql.trifle/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.web.http/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.web.page/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.web.duet/build.xml" inheritAll="false" />

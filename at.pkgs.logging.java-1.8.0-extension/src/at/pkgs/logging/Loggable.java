@@ -51,7 +51,6 @@ public interface Loggable {
 		this.logger().trace(throwable, format, arguments);
 	}
 
-
 	public default boolean debug() {
 		return this.logger().debug();
 	}
