@@ -23,18 +23,121 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Collections;
+import java.io.Serializable;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.sql.DataSource;
 
-public class Model<ColumnType extends Model.Column> {
+public class Model<ColumnType extends Model.Column> implements Serializable {
 
 	public static interface Column {
 
-		public String column();
+		public void expression(Query query);
 
 	}
 
-	public static abstract class Via {
+	public static abstract class Transaction<ResultType> {
+
+		public enum Level {
+
+			READ_UNCOMMITTED(Connection.TRANSACTION_READ_UNCOMMITTED),
+
+			READ_COMMITTED(Connection.TRANSACTION_READ_COMMITTED),
+
+			REPEATABLE_READ(Connection.TRANSACTION_REPEATABLE_READ),
+
+			SERIALIZABLE(Connection.TRANSACTION_SERIALIZABLE);
+
+			private final int value;
+
+			private Level(int value) {
+				this.value = value;
+			}
+
+		}
+
+		private final Level level;
+
+		private final double interval;
+
+		private final int retry;
+
+		public Transaction(Level level, double interval, int retry) {
+			this.level = level;
+			this.interval = interval;
+			this.retry = retry;
+		}
+
+		protected abstract ResultType execute(
+				Connection connection)
+						throws SQLException;
+
+		public ResultType execute(
+				DataSource source)
+						throws SQLException {
+			int retry;
+
+			retry = this.retry;
+			while (true) {
+				Connection connection;
+				Connection rollback;
+
+				-- retry;
+				connection = null;
+				rollback = null;
+				try {
+					ResultType result;
+
+					connection = source.getConnection();
+					connection.setAutoCommit(false);
+					connection.setTransactionIsolation(this.level.value);
+					rollback = connection;
+					result = this.execute(connection);
+					connection.commit();
+					rollback = null;
+					try {
+						connection.setAutoCommit(true);
+					}
+					catch (SQLException cause) {
+						throw new RuntimeException(cause);
+					}
+					return result;
+				}
+				catch (SQLException cause) {
+					try {
+						if (rollback != null) rollback.rollback();
+					}
+					catch (SQLException ignored) {
+						// do nothing
+					}
+					if (retry < 0) throw cause;
+					if (this.interval > 0D) {
+						double time;
+
+						time = Math.random() * 1000D * this.interval;
+						try {
+							Thread.sleep(Double.valueOf(time).longValue());
+						}
+						catch (InterruptedException ignored) {
+							// do nothing
+						}
+					}
+				}
+				finally {
+					try {
+						if (connection != null) connection.close();
+					}
+					catch (SQLException ignored) {
+						// do nothing
+					}
+				}
+			}
+		}
+
+	}
+
+	public static abstract class Via<ModelType extends Model<?>> {
 
 		private List<Column> columns;
 
@@ -79,7 +182,7 @@ public class Model<ColumnType extends Model.Column> {
 		}
 
 		@SuppressWarnings("unchecked")
-		public <ModelType> Constructor<ModelType> getConstructor() {
+		public Constructor<ModelType> getConstructor() {
 			if (this.constructor == null) {
 				synchronized (this) {
 					if (this.constructor == null)
@@ -89,9 +192,9 @@ public class Model<ColumnType extends Model.Column> {
 			return (Constructor<ModelType>)this.constructor;
 		}
 
-		protected <ModelType> ModelType model() {
+		protected ModelType model() {
 			try {
-				return this.<ModelType>getConstructor().newInstance();
+				return this.getConstructor().newInstance();
 			}
 			catch (RuntimeException cause) {
 				throw cause;
@@ -102,10 +205,10 @@ public class Model<ColumnType extends Model.Column> {
 		}
 
 		@SuppressWarnings("unchecked")
-		protected <ModelType> ModelType populate(
+		protected ModelType populate(
 				List<Column> columns,
 				Object... values) {
-			Model<?> model;
+			ModelType model;
 			Map<Object, Object> map;
 
 			model = this.model();
@@ -115,8 +218,20 @@ public class Model<ColumnType extends Model.Column> {
 			return (ModelType)model;
 		}
 
-		@SuppressWarnings("unchecked")
-		protected <ModelType> List<ModelType> populate(
+		protected ModelType populateOne(
+				List<Column> columns,
+				ResultSet result)
+						throws SQLException {
+			Object[] values;
+
+			values = new Object[result.getMetaData().getColumnCount()];
+			if (!result.next()) return null;
+			for (int index = 0; index < values.length; index ++)
+				values[index] = result.getObject(index + 1);
+			return (ModelType)this.populate(columns, values);
+		}
+
+		protected List<ModelType> populateAll(
 				List<Column> columns,
 				ResultSet result)
 						throws SQLException {
@@ -133,9 +248,376 @@ public class Model<ColumnType extends Model.Column> {
 			return models;
 		}
 
+		protected abstract void from(Query query);
+
+		public ModelType retrieveOne(
+				DataSource source,
+				Query.Criteria criteria,
+				Query.OrderBy sort)
+						throws SQLException {
+			Query query;
+			Connection connection;
+
+			query = new Query();
+			query.append("SELECT ALL ").join(", ", this.getColumns());
+			this.from(query.append(" FROM "));
+			if (criteria != null) query.append(" WHERE ").append(criteria);
+			if (sort != null) query.append(sort);
+			connection = null;
+			try {
+				connection = source.getConnection();
+				return this.populateOne(
+						this.getColumns(),
+						query.prepare(connection).executeQuery());
+			}
+			finally {
+				if (connection != null) connection.close();
+			}
+		}
+
+		public ModelType retrieveOne(
+				DataSource source,
+				Query.Criteria criteria)
+						throws SQLException {
+			return this.retrieveOne(source, criteria, null);
+		}
+
+		public ModelType retrieveOne(
+				DataSource source,
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveOne(source, null, sort);
+		}
+
+		public ModelType retrieveOne(
+				DataSource source)
+						throws SQLException {
+			return this.retrieveOne(source, null, null);
+		}
+
+		protected List<ModelType> retrieveAny(
+				DataSource source,
+				boolean distinct,
+				Query.Criteria criteria,
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			Query query;
+			Connection connection;
+
+			if (offset > 0L || length > 0L)
+				throw new UnsupportedOperationException();
+			query = new Query();
+			query.append("SELECT ").append(distinct ? "DISTINCT" : "ALL");
+			query.append(' ').join(", ", this.getColumns());
+			this.from(query.append(" FROM "));
+			if (criteria != null) query.append(" WHERE ").append(criteria);
+			if (sort != null) query.append(sort);
+			connection = null;
+			try {
+				connection = source.getConnection();
+				return this.populateAll(
+						this.getColumns(),
+						query.prepare(connection).executeQuery());
+			}
+			finally {
+				if (connection != null) connection.close();
+			}
+		}
+
+		public List<ModelType> retrieveAll(
+				DataSource source,
+				Query.Criteria criteria,
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					false,
+					criteria,
+					sort,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveAll(
+				DataSource source,
+				Query.Criteria criteria,
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					false,
+					criteria,
+					sort,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveAll(
+				DataSource source,
+				Query.Criteria criteria,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					false,
+					criteria,
+					null,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveAll(
+				DataSource source,
+				Query.Criteria criteria)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					false,
+					criteria,
+					null,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveAll(
+				DataSource source,
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					false,
+					null,
+					sort,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveAll(
+				DataSource source,
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					false,
+					null,
+					sort,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveAll(
+				DataSource source,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					false,
+					null,
+					null,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveAll(
+				DataSource source)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					false,
+					null,
+					null,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				DataSource source,
+				Query.Criteria criteria,
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					true,
+					criteria,
+					sort,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				DataSource source,
+				Query.Criteria criteria,
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					true,
+					criteria,
+					sort,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				DataSource source,
+				Query.Criteria criteria,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					true,
+					criteria,
+					null,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				DataSource source,
+				Query.Criteria criteria)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					true,
+					criteria,
+					null,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				DataSource source,
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					true,
+					null,
+					sort,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				DataSource source,
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					true,
+					null,
+					sort,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				DataSource source,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					true,
+					null,
+					null,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				DataSource source)
+						throws SQLException {
+			return this.retrieveAny(
+					source,
+					true,
+					null,
+					null,
+					-1L,
+					-1L);
+		}
+
+		public long count(
+				DataSource source,
+				Query.Criteria criteria)
+						throws SQLException {
+			Query query;
+			Connection  connection;
+
+			query = new Query();
+			query.append("SELECT ALL COUNT(*)");
+			this.from(query.append(" FROM "));
+			if (criteria != null) query.append(" WHERE ").append(criteria);
+			connection = null;
+			try {
+				ResultSet result;
+
+				connection = source.getConnection();
+				result = query.prepare(connection).executeQuery();
+				return result.next() ? result.getLong(1) : 0L;
+			}
+			finally {
+				if (connection != null) connection.close();
+			}
+		}
+
 	}
 
-	private final Map<ColumnType, Object> values;
+	public static abstract class PostgreSQL<ModelType extends Model<?>>
+	extends Via<ModelType> {
+
+		@Override
+		protected List<ModelType> retrieveAny(
+				DataSource source,
+				boolean distinct,
+				Query.Criteria criteria,
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			Query query;
+			Connection connection;
+
+			query = new Query();
+			query.append("SELECT ").append(distinct ? "DISTINCT" : "ALL");
+			query.append(' ').join(", ", this.getColumns());
+			this.from(query.append(" FROM "));
+			if (criteria != null) query.append(" WHERE ").append(criteria);
+			if (sort != null) query.append(sort);
+			if (length > 0L)
+				query.append(" LIMIT ").value(offset);
+			if (offset > 0L)
+				query.append(" OFFSET ").value(offset);
+			connection = null;
+			try {
+				connection = source.getConnection();
+				return this.populateAll(
+						this.getColumns(),
+						query.prepare(connection).executeQuery());
+			}
+			finally {
+				if (connection != null) connection.close();
+			}
+		}
+
+	}
+
+	private static final long serialVersionUID = 1L;
+
+	final Map<ColumnType, Object> values;
 
 	public Model() {
 		this.values = new LinkedHashMap<ColumnType, Object>();

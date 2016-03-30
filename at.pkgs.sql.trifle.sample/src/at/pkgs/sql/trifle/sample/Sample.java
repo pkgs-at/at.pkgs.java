@@ -17,7 +17,6 @@
 
 package at.pkgs.sql.trifle.sample;
 
-import java.util.List;
 import at.pkgs.sql.trifle.Query;
 import at.pkgs.sql.trifle.Model;
 
@@ -36,34 +35,22 @@ public class Sample extends Model<Sample.Column> {
 		}
 
 		@Override
-		public String column() {
-			return this.column;
+		public void expression(Query query) {
+			query.identifier(this.column);
 		}
 
 	}
 
-	public static class Via extends Model.Via {
+	public static class Via extends Model.Via<Sample> {
 
-		public List<Sample> retrieve(/* TODO */) {
-			Query builder;
-
-			builder = new Query();
-			builder.toString();
-			return null;
-		}
-
-		public List<Sample> retrieve(Query.Criteria criteria) {
-			return this.populate(null);
-		}
-
-		public Sample test() {
-			return this.populate(
-					this.getColumns(),
-					"fc1",
-					"fc2");
+		@Override
+		protected void from(Query query) {
+			query.identifier("TABLE1");
 		}
 
 	}
+
+	private static final long serialVersionUID = 1L;
 
 	public static final Via VIA = new Via();
 
@@ -76,12 +63,8 @@ public class Sample extends Model<Sample.Column> {
 	}
 
 	public static void main(String... arguments) {
-		Sample model;
 		Query query;
 
-		model = Sample.VIA.test();
-		System.out.println(model.getField1());
-		System.out.println(model.getField2());
 		query = new Query();
 		query.clause(
 				"SELECT ALL ",
@@ -106,12 +89,10 @@ public class Sample extends Model<Sample.Column> {
 						new Query.Or(
 								new Query.Equal(
 										Column.FIELD1,
-										new Query.StringValue(
-												"aaa")),
+										"aaa")),
 								new Query.NotEqual(
 										Column.FIELD2,
-										new Query.StringValue(
-												"bbb")))));
+										"bbb")));
 		System.out.println(query);
 	}
 
