@@ -27,7 +27,8 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import javax.sql.DataSource;
+import java.sql.SQLNonTransientException;
+import at.pkgs.sql.trifle.dialect.Dialect;
 
 public class Model<ColumnType extends Model.Column> implements Serializable {
 
@@ -37,9 +38,9 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 
 	}
 
-	public static abstract class Transaction<ResultType> {
+	public static abstract class Via<ModelType extends Model<?>> {
 
-		public enum Level {
+		public enum Isolation {
 
 			READ_UNCOMMITTED(Connection.TRANSACTION_READ_UNCOMMITTED),
 
@@ -51,97 +52,83 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 
 			private final int value;
 
-			private Level(int value) {
+			private Isolation(int value) {
 				this.value = value;
 			}
 
-		}
-
-		private final Level level;
-
-		private final double interval;
-
-		private final int retry;
-
-		public Transaction(Level level, double interval, int retry) {
-			this.level = level;
-			this.interval = interval;
-			this.retry = retry;
-		}
-
-		protected abstract ResultType execute(
-				Connection connection)
-						throws SQLException;
-
-		public ResultType execute(
-				DataSource source)
-						throws SQLException {
-			int retry;
-
-			retry = this.retry;
-			while (true) {
-				Connection connection;
-				Connection rollback;
-
-				-- retry;
-				connection = null;
-				rollback = null;
-				try {
-					ResultType result;
-
-					connection = source.getConnection();
-					connection.setAutoCommit(false);
-					connection.setTransactionIsolation(this.level.value);
-					rollback = connection;
-					result = this.execute(connection);
-					connection.commit();
-					rollback = null;
-					try {
-						connection.setAutoCommit(true);
-					}
-					catch (SQLException cause) {
-						throw new RuntimeException(cause);
-					}
-					return result;
-				}
-				catch (SQLException cause) {
-					try {
-						if (rollback != null) rollback.rollback();
-					}
-					catch (SQLException ignored) {
-						// do nothing
-					}
-					if (retry < 0) throw cause;
-					if (this.interval > 0D) {
-						double time;
-
-						time = Math.random() * 1000D * this.interval;
-						try {
-							Thread.sleep(Double.valueOf(time).longValue());
-						}
-						catch (InterruptedException ignored) {
-							// do nothing
-						}
-					}
-				}
-				finally {
-					try {
-						if (connection != null) connection.close();
-					}
-					catch (SQLException ignored) {
-						// do nothing
-					}
-				}
+			public int value() {
+				return this.value;
 			}
+
 		}
 
-	}
+		public static interface Transaction {
 
-	public static abstract class Via<ModelType extends Model<?>> {
+			public Isolation isolation();
+
+			public int retry();
+
+			public long interval();
+
+		}
+
+		public static abstract class AbstractTransaction implements Transaction {
+
+			public Isolation isolation() {
+				return Isolation.READ_COMMITTED;
+			}
+
+			public int retry() {
+				return 0;
+			}
+
+			public long interval() {
+				return Double.valueOf(Math.random() * 1000D).longValue();
+			}
+
+		}
+
+		public static interface Action extends Transaction {
+
+			public abstract void execute(
+					Connection connection)
+							throws SQLException;
+
+		}
+
+		public static interface Function<ResultType> extends Transaction {
+
+			public abstract ResultType execute(
+					Connection connection)
+							throws SQLException;
+
+		}
+
+		protected final Dialect.Table table;
 
 		private List<Column> columns;
 
 		private Constructor<?> constructor;
+
+		protected Via() {
+			this.table = new Dialect.Table() {
+
+				@Override
+				public void from(Query query) {
+					Via.this.from(query);
+				}
+
+				@Override
+				public List<Column> getColumns() {
+					return Via.this.getColumns();
+				}
+
+			};
+		}
+
+		protected abstract Dialect getDialect();
+
+		protected abstract Connection getConnection() throws SQLException;
 
 		private List<Column> columns() {
 			List<Column> columns;
@@ -160,11 +147,11 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		@SuppressWarnings("unchecked")
-		public <ColumnType extends Column> List<ColumnType> getColumns() {
+		protected <ColumnType extends Column> List<ColumnType> getColumns() {
 			if (this.columns == null) {
 				synchronized (this) {
 					if (this.columns == null)
-						this.columns = this.columns();
+						this.columns = Collections.unmodifiableList(this.columns());
 				}
 			}
 			return (List<ColumnType>)this.columns;
@@ -172,9 +159,7 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 
 		private Constructor<?> constructor() {
 			try {
-				return this.getClass()
-						.getEnclosingClass()
-						.getConstructor();
+				return this.getClass().getEnclosingClass().getConstructor();
 			}
 			catch (Exception cause) {
 				throw new RuntimeException(cause);
@@ -182,7 +167,7 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		@SuppressWarnings("unchecked")
-		public Constructor<ModelType> getConstructor() {
+		protected Constructor<ModelType> getConstructor() {
 			if (this.constructor == null) {
 				synchronized (this) {
 					if (this.constructor == null)
@@ -202,6 +187,109 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 			catch (Exception cause) {
 				throw new RuntimeException(cause);
 			}
+		}
+
+		protected Query query() {
+			return new Query(this.getDialect());
+		}
+
+		protected <ResultType> ResultType transaction(
+				Function<ResultType> transaction)
+						throws SQLException {
+			int retry;
+
+			retry = 0;
+			while (true) {
+				Connection connection;
+				boolean ignore;
+				Integer transactionIsolation;
+				Boolean autoCommit;
+
+				connection = this.getConnection();
+				ignore = true;
+				transactionIsolation = null;
+				autoCommit = null;
+				try {
+					ResultType result;
+					Isolation isolation;
+
+					isolation = transaction.isolation();
+					if (isolation != null) {
+						transactionIsolation = connection.getTransactionIsolation();
+						connection.setTransactionIsolation(isolation.value());
+					}
+					autoCommit = connection.getAutoCommit();
+					connection.setAutoCommit(false);
+					result = transaction.execute(connection);
+					connection.commit();
+					if (autoCommit != null)
+						connection.setAutoCommit(autoCommit);
+					if (transactionIsolation != null)
+						connection.setTransactionIsolation(transactionIsolation);
+					ignore = false;
+					return result;
+				}
+				catch (SQLException cause) {
+					try {
+						connection.rollback();
+						if (autoCommit != null)
+							connection.setAutoCommit(autoCommit);
+						if (transactionIsolation != null)
+							connection.setTransactionIsolation(transactionIsolation);
+					}
+					catch (SQLException ignored) {
+						// do nothing
+					}
+					if (cause instanceof SQLNonTransientException) throw cause;
+					if (retry >= transaction.retry()) throw cause;
+				}
+				finally {
+					try {
+						connection.close();
+					}
+					catch (SQLException cause) {
+						if (!ignore) throw cause;
+					}
+				}
+				retry ++;
+				try {
+					Thread.sleep(transaction.interval());
+				}
+				catch (InterruptedException ignored) {
+					// do nothing
+				}
+			}
+		}
+
+		protected void transaction(
+				final Action transaction)
+						throws SQLException {
+			this.transaction(new Function<Void>() {
+
+				@Override
+				public Isolation isolation() {
+					return transaction.isolation();
+				}
+
+				@Override
+				public int retry() {
+					return transaction.retry();
+				}
+
+				@Override
+				public long interval() {
+					return transaction.interval();
+				}
+
+				@Override
+				public Void execute(
+						Connection connection)
+								throws SQLException {
+					transaction.execute(connection);
+					return null;
+				}
+
+			});
 		}
 
 		@SuppressWarnings("unchecked")
@@ -251,52 +339,84 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		protected abstract void from(Query query);
 
 		public ModelType retrieveOne(
-				DataSource source,
+				Connection connection,
 				Query.Criteria criteria,
 				Query.OrderBy sort)
 						throws SQLException {
 			Query query;
-			Connection connection;
+			boolean close;
 
-			query = new Query();
-			query.append("SELECT ALL ").join(", ", this.getColumns());
-			this.from(query.append(" FROM "));
-			if (criteria != null) query.append(" WHERE ").append(criteria);
-			if (sort != null) query.append(sort);
-			connection = null;
+			query = this.query();
+			this.getDialect().select(
+					query,
+					this.table,
+					false,
+					criteria,
+					sort,
+					-1L,
+					-1L);
+			if (connection == null) {
+				connection = this.getConnection();
+				close = true;
+			}
+			else {
+				close = false;
+			}
 			try {
-				connection = source.getConnection();
 				return this.populateOne(
 						this.getColumns(),
 						query.prepare(connection).executeQuery());
 			}
 			finally {
-				if (connection != null) connection.close();
+				if (close) connection.close();
 			}
 		}
 
 		public ModelType retrieveOne(
-				DataSource source,
+				Connection connection,
 				Query.Criteria criteria)
 						throws SQLException {
-			return this.retrieveOne(source, criteria, null);
+			return this.retrieveOne(connection, criteria, null);
 		}
 
 		public ModelType retrieveOne(
-				DataSource source,
+				Connection connection)
+						throws SQLException {
+			return this.retrieveOne(connection, null, null);
+		}
+
+		public ModelType retrieveOne(
+				Connection connection,
 				Query.OrderBy sort)
 						throws SQLException {
-			return this.retrieveOne(source, null, sort);
+			return this.retrieveOne(connection, null, sort);
 		}
 
 		public ModelType retrieveOne(
-				DataSource source)
+				Query.Criteria criteria,
+				Query.OrderBy sort)
 						throws SQLException {
-			return this.retrieveOne(source, null, null);
+			return this.retrieveOne(null, criteria, sort);
+		}
+
+		public ModelType retrieveOne(
+				Query.Criteria criteria)
+						throws SQLException {
+			return this.retrieveOne(null, criteria, null);
+		}
+
+		public ModelType retrieveOne(
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveOne(null, null, sort);
+		}
+
+		public ModelType retrieveOne() throws SQLException {
+			return this.retrieveOne(null, null, null);
 		}
 
 		protected List<ModelType> retrieveAny(
-				DataSource source,
+				Connection connection,
 				boolean distinct,
 				Query.Criteria criteria,
 				Query.OrderBy sort,
@@ -304,37 +424,43 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 				long length)
 						throws SQLException {
 			Query query;
-			Connection connection;
+			boolean close;
 
-			if (offset > 0L || length > 0L)
-				throw new UnsupportedOperationException();
-			query = new Query();
-			query.append("SELECT ").append(distinct ? "DISTINCT" : "ALL");
-			query.append(' ').join(", ", this.getColumns());
-			this.from(query.append(" FROM "));
-			if (criteria != null) query.append(" WHERE ").append(criteria);
-			if (sort != null) query.append(sort);
-			connection = null;
+			query = this.query();
+			this.getDialect().select(
+					query,
+					this.table,
+					distinct,
+					criteria,
+					sort,
+					offset,
+					length);
+			if (connection == null) {
+				connection = this.getConnection();
+				close = true;
+			}
+			else {
+				close = false;
+			}
 			try {
-				connection = source.getConnection();
 				return this.populateAll(
 						this.getColumns(),
 						query.prepare(connection).executeQuery());
 			}
 			finally {
-				if (connection != null) connection.close();
+				if (close) connection.close();
 			}
 		}
 
 		public List<ModelType> retrieveAll(
-				DataSource source,
+				Connection connection,
 				Query.Criteria criteria,
 				Query.OrderBy sort,
 				long offset,
 				long length)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					false,
 					criteria,
 					sort,
@@ -343,12 +469,12 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveAll(
-				DataSource source,
+				Connection connection,
 				Query.Criteria criteria,
 				Query.OrderBy sort)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					false,
 					criteria,
 					sort,
@@ -357,13 +483,13 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveAll(
-				DataSource source,
+				Connection connection,
 				Query.Criteria criteria,
 				long offset,
 				long length)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					false,
 					criteria,
 					null,
@@ -372,11 +498,11 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveAll(
-				DataSource source,
+				Connection connection,
 				Query.Criteria criteria)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					false,
 					criteria,
 					null,
@@ -385,13 +511,13 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveAll(
-				DataSource source,
+				Connection connection,
 				Query.OrderBy sort,
 				long offset,
 				long length)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					false,
 					null,
 					sort,
@@ -400,11 +526,11 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveAll(
-				DataSource source,
+				Connection connection,
 				Query.OrderBy sort)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					false,
 					null,
 					sort,
@@ -413,12 +539,12 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveAll(
-				DataSource source,
+				Connection connection,
 				long offset,
 				long length)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					false,
 					null,
 					null,
@@ -427,10 +553,10 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveAll(
-				DataSource source)
+				Connection connection)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					false,
 					null,
 					null,
@@ -438,57 +564,161 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 					-1L);
 		}
 
-		public List<ModelType> retrieveDistinct(
-				DataSource source,
+		public List<ModelType> retrieveAll(
 				Query.Criteria criteria,
 				Query.OrderBy sort,
 				long offset,
 				long length)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
-					true,
+					null,
+					false,
 					criteria,
 					sort,
 					offset,
 					length);
 		}
 
-		public List<ModelType> retrieveDistinct(
-				DataSource source,
+		public List<ModelType> retrieveAll(
 				Query.Criteria criteria,
 				Query.OrderBy sort)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
-					true,
+					null,
+					false,
 					criteria,
 					sort,
 					-1L,
 					-1L);
 		}
 
-		public List<ModelType> retrieveDistinct(
-				DataSource source,
+		public List<ModelType> retrieveAll(
 				Query.Criteria criteria,
 				long offset,
 				long length)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
-					true,
+					null,
+					false,
 					criteria,
 					null,
 					offset,
 					length);
 		}
 
-		public List<ModelType> retrieveDistinct(
-				DataSource source,
+		public List<ModelType> retrieveAll(
 				Query.Criteria criteria)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					null,
+					false,
+					criteria,
+					null,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveAll(
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					false,
+					null,
+					sort,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveAll(
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					false,
+					null,
+					sort,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveAll(
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					false,
+					null,
+					null,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveAll()
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					false,
+					null,
+					null,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Connection connection,
+				Query.Criteria criteria,
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					connection,
+					true,
+					criteria,
+					sort,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Connection connection,
+				Query.Criteria criteria,
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveAny(
+					connection,
+					true,
+					criteria,
+					sort,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Connection connection,
+				Query.Criteria criteria,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					connection,
+					true,
+					criteria,
+					null,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Connection connection,
+				Query.Criteria criteria)
+						throws SQLException {
+			return this.retrieveAny(
+					connection,
 					true,
 					criteria,
 					null,
@@ -497,13 +727,13 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveDistinct(
-				DataSource source,
+				Connection connection,
 				Query.OrderBy sort,
 				long offset,
 				long length)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					true,
 					null,
 					sort,
@@ -512,11 +742,11 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveDistinct(
-				DataSource source,
+				Connection connection,
 				Query.OrderBy sort)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					true,
 					null,
 					sort,
@@ -525,12 +755,12 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveDistinct(
-				DataSource source,
+				Connection connection,
 				long offset,
 				long length)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
 					true,
 					null,
 					null,
@@ -539,10 +769,114 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public List<ModelType> retrieveDistinct(
-				DataSource source)
+				Connection connection)
 						throws SQLException {
 			return this.retrieveAny(
-					source,
+					connection,
+					true,
+					null,
+					null,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Query.Criteria criteria,
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					true,
+					criteria,
+					sort,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Query.Criteria criteria,
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					true,
+					criteria,
+					sort,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Query.Criteria criteria,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					true,
+					criteria,
+					null,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Query.Criteria criteria)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					true,
+					criteria,
+					null,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Query.OrderBy sort,
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					true,
+					null,
+					sort,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				Query.OrderBy sort)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					true,
+					null,
+					sort,
+					-1L,
+					-1L);
+		}
+
+		public List<ModelType> retrieveDistinct(
+				long offset,
+				long length)
+						throws SQLException {
+			return this.retrieveAny(
+					null,
+					true,
+					null,
+					null,
+					offset,
+					length);
+		}
+
+		public List<ModelType> retrieveDistinct()
+						throws SQLException {
+			return this.retrieveAny(
+					null,
 					true,
 					null,
 					null,
@@ -551,66 +885,55 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		public long count(
-				DataSource source,
+				Connection connection,
 				Query.Criteria criteria)
 						throws SQLException {
 			Query query;
-			Connection  connection;
+			boolean close;
 
-			query = new Query();
-			query.append("SELECT ALL COUNT(*)");
-			this.from(query.append(" FROM "));
-			if (criteria != null) query.append(" WHERE ").append(criteria);
-			connection = null;
+			query = this.query();
+			this.getDialect().count(
+					query,
+					this.table,
+					criteria);
+			if (connection == null) {
+				connection = this.getConnection();
+				close = true;
+			}
+			else {
+				close = false;
+			}
 			try {
 				ResultSet result;
 
-				connection = source.getConnection();
 				result = query.prepare(connection).executeQuery();
 				return result.next() ? result.getLong(1) : 0L;
 			}
 			finally {
-				if (connection != null) connection.close();
+				if (close) connection.close();
 			}
 		}
 
-	}
-
-	public static abstract class PostgreSQL<ModelType extends Model<?>>
-	extends Via<ModelType> {
-
-		@Override
-		protected List<ModelType> retrieveAny(
-				DataSource source,
-				boolean distinct,
-				Query.Criteria criteria,
-				Query.OrderBy sort,
-				long offset,
-				long length)
+		public long count(
+				Connection connection)
 						throws SQLException {
-			Query query;
-			Connection connection;
+			return this.count(
+					connection,
+					null);
+		}
 
-			query = new Query();
-			query.append("SELECT ").append(distinct ? "DISTINCT" : "ALL");
-			query.append(' ').join(", ", this.getColumns());
-			this.from(query.append(" FROM "));
-			if (criteria != null) query.append(" WHERE ").append(criteria);
-			if (sort != null) query.append(sort);
-			if (length > 0L)
-				query.append(" LIMIT ").value(offset);
-			if (offset > 0L)
-				query.append(" OFFSET ").value(offset);
-			connection = null;
-			try {
-				connection = source.getConnection();
-				return this.populateAll(
-						this.getColumns(),
-						query.prepare(connection).executeQuery());
-			}
-			finally {
-				if (connection != null) connection.close();
-			}
+		public long count(
+				Query.Criteria criteria)
+						throws SQLException {
+			return this.count(
+					null,
+					criteria);
+		}
+
+		public long count() throws SQLException {
+			return this.count(
+					null,
+					null);
 		}
 
 	}

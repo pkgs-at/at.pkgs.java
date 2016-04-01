@@ -17,7 +17,10 @@
 
 package at.pkgs.sql.trifle.sample;
 
+import java.sql.Connection;
 import at.pkgs.sql.trifle.Query;
+import at.pkgs.sql.trifle.dialect.Dialect;
+import at.pkgs.sql.trifle.dialect.PostgreSQL;
 import at.pkgs.sql.trifle.Model;
 
 public class Sample extends Model<Sample.Column> {
@@ -43,9 +46,59 @@ public class Sample extends Model<Sample.Column> {
 
 	public static class Via extends Model.Via<Sample> {
 
+		private final Dialect dialect;
+
+		public Via() {
+			this.dialect = new PostgreSQL();
+		}
+
 		@Override
-		protected void from(Query query) {
+		protected Dialect getDialect() {
+			return this.dialect;
+		}
+
+		@Override
+		protected Connection getConnection() {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void from(Query query) {
 			query.identifier("TABLE1");
+		}
+
+		public void test() {
+			Query query;
+
+			query = this.query();
+			query.clause(
+					"SELECT ALL ",
+					", ",
+					null,
+					null,
+					Column.FIELD1,
+					Column.FIELD2);
+			query.clause(
+					" WHERE ",
+					" AND ",
+					null,
+					null,
+					new Query.And(
+							new Query.Or(
+									new Query.Equal(
+											Column.FIELD1,
+											null),
+									new Query.NotEqual(
+											Column.FIELD2,
+											null)),
+							new Query.Or(
+									new Query.Equal(
+											Column.FIELD1,
+											"aaa")),
+									new Query.NotEqual(
+											Column.FIELD2,
+											"bbb")));
+			System.out.println(query);
 		}
 
 	}
@@ -63,37 +116,7 @@ public class Sample extends Model<Sample.Column> {
 	}
 
 	public static void main(String... arguments) {
-		Query query;
-
-		query = new Query();
-		query.clause(
-				"SELECT ALL ",
-				", ",
-				null,
-				null,
-				Column.FIELD1,
-				Column.FIELD2);
-		query.clause(
-				" WHERE ",
-				" AND ",
-				null,
-				null,
-				new Query.And(
-						new Query.Or(
-								new Query.Equal(
-										Column.FIELD1,
-										null),
-								new Query.NotEqual(
-										Column.FIELD2,
-										null)),
-						new Query.Or(
-								new Query.Equal(
-										Column.FIELD1,
-										"aaa")),
-								new Query.NotEqual(
-										Column.FIELD2,
-										"bbb")));
-		System.out.println(query);
+		VIA.test();
 	}
 
 }

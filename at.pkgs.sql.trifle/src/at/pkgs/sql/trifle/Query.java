@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import at.pkgs.sql.trifle.dialect.Dialect;
 
 public class Query {
 
@@ -707,11 +708,14 @@ public class Query {
 
 	public static final String NEWLINE = String.format("%n");
 
+	private final Dialect dialect;
+
 	private final StringBuilder query;
 
 	private final List<Variable> variables;
 
-	public Query() {
+	public Query(Dialect dialect) {
+		this.dialect = dialect;
 		this.query = new StringBuilder();
 		this.variables = new ArrayList<Variable>();
 	}
@@ -735,12 +739,7 @@ public class Query {
 	}
 
 	public Query identifier(String name) {
-		this.query.append('"');
-		for (char character : name.toCharArray()) {
-			if (character == '"') this.query.append('"');
-			this.query.append(character);
-		}
-		this.query.append('"');
+		this.dialect.identifier(this, name);
 		return this;
 	}
 
