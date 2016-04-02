@@ -19,7 +19,7 @@ package at.pkgs.sql.trifle.dialect;
 
 import at.pkgs.sql.trifle.Query;
 
-public class PostgreSQL extends Dialect {
+public class H2Database extends Dialect {
 
 	@Override
 	public void select(

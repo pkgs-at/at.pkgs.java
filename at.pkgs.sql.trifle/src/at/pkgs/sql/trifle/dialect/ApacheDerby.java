@@ -19,7 +19,7 @@ package at.pkgs.sql.trifle.dialect;
 
 import at.pkgs.sql.trifle.Query;
 
-public class Derby extends Dialect {
+public class ApacheDerby extends Dialect {
 
 	@Override
 	public void select(
@@ -31,8 +31,10 @@ public class Derby extends Dialect {
 			long offset,
 			long length) {
 		super.select(query, table, distinct, criteria, sort, -1L, -1L);
-		if (offset < 0L && length < 0L) return;
-		if (offset < 0L) offset = 0L;
+		if (offset < 0L) {
+			if (length < 0L) return;
+			offset = 0L;
+		}
 		query.append(" OFFSET ").value(offset).append(" ROWS");
 		if (length >= 0L) query.append(" FETCH NEXT ").value(length).append(" ROWS ONLY");
 	}
