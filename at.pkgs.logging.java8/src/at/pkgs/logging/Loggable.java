@@ -19,28 +19,28 @@ package at.pkgs.logging;
 
 public interface Loggable {
 
-	public Logger logger();
+	public Logger getLogger();
 
 	public default boolean trace() {
-		return this.logger().trace();
+		return this.getLogger().trace();
 	}
 
 	public default void trace(
 			String message) {
-		this.logger().trace(message);
+		this.getLogger().trace(message);
 	}
 
 	public default void trace(
 			String format,
 			Object... arguments) {
 		if (!this.trace()) return;
-		this.logger().trace(format, arguments);
+		this.getLogger().trace(format, arguments);
 	}
 
 	public default void trace(
 			Throwable throwable,
 			String message) {
-		this.logger().trace(throwable, message);
+		this.getLogger().trace(throwable, message);
 	}
 
 	public default void trace(
@@ -48,29 +48,29 @@ public interface Loggable {
 			String format,
 			Object... arguments) {
 		if (!this.trace()) return;
-		this.logger().trace(throwable, format, arguments);
+		this.getLogger().trace(throwable, format, arguments);
 	}
 
 	public default boolean debug() {
-		return this.logger().debug();
+		return this.getLogger().debug();
 	}
 
 	public default void debug(
 			String message) {
-		this.logger().debug(message);
+		this.getLogger().debug(message);
 	}
 
 	public default void debug(
 			String format,
 			Object... arguments) {
 		if (!this.debug()) return;
-		this.logger().debug(format, arguments);
+		this.getLogger().debug(format, arguments);
 	}
 
 	public default void debug(
 			Throwable throwable,
 			String message) {
-		this.logger().debug(throwable, message);
+		this.getLogger().debug(throwable, message);
 	}
 
 	public default void debug(
@@ -78,29 +78,29 @@ public interface Loggable {
 			String format,
 			Object... arguments) {
 		if (!this.debug()) return;
-		this.logger().debug(throwable, format, arguments);
+		this.getLogger().debug(throwable, format, arguments);
 	}
 
 	public default boolean information() {
-		return this.logger().information();
+		return this.getLogger().information();
 	}
 
 	public default void information(
 			String message) {
-		this.logger().information(message);
+		this.getLogger().information(message);
 	}
 
 	public default void information(
 			String format,
 			Object... arguments) {
 		if (!this.information()) return;
-		this.logger().information(format, arguments);
+		this.getLogger().information(format, arguments);
 	}
 
 	public default void information(
 			Throwable throwable,
 			String message) {
-		this.logger().information(throwable, message);
+		this.getLogger().information(throwable, message);
 	}
 
 	public default void information(
@@ -108,29 +108,29 @@ public interface Loggable {
 			String format,
 			Object... arguments) {
 		if (!this.information()) return;
-		this.logger().information(throwable, format, arguments);
+		this.getLogger().information(throwable, format, arguments);
 	}
 
 	public default boolean warning() {
-		return this.logger().warning();
+		return this.getLogger().warning();
 	}
 
 	public default void warning(
 			String message) {
-		this.logger().warning(message);
+		this.getLogger().warning(message);
 	}
 
 	public default void warning(
 			String format,
 			Object... arguments) {
 		if (!this.warning()) return;
-		this.logger().warning(format, arguments);
+		this.getLogger().warning(format, arguments);
 	}
 
 	public default void warning(
 			Throwable throwable,
 			String message) {
-		this.logger().warning(throwable, message);
+		this.getLogger().warning(throwable, message);
 	}
 
 	public default void warning(
@@ -138,29 +138,29 @@ public interface Loggable {
 			String format,
 			Object... arguments) {
 		if (!this.warning()) return;
-		this.logger().warning(throwable, format, arguments);
+		this.getLogger().warning(throwable, format, arguments);
 	}
 
 	public default boolean error() {
-		return this.logger().error();
+		return this.getLogger().error();
 	}
 
 	public default void error(
 			String message) {
-		this.logger().error(message);
+		this.getLogger().error(message);
 	}
 
 	public default void error(
 			String format,
 			Object... arguments) {
 		if (!this.error()) return;
-		this.logger().error(format, arguments);
+		this.getLogger().error(format, arguments);
 	}
 
 	public default void error(
 			Throwable throwable,
 			String message) {
-		this.logger().error(throwable, message);
+		this.getLogger().error(throwable, message);
 	}
 
 	public default void error(
@@ -168,29 +168,29 @@ public interface Loggable {
 			String format,
 			Object... arguments) {
 		if (!this.error()) return;
-		this.logger().error(throwable, format, arguments);
+		this.getLogger().error(throwable, format, arguments);
 	}
 
 	public default boolean fatal() {
-		return this.logger().fatal();
+		return this.getLogger().fatal();
 	}
 
 	public default void fatal(
 			String message) {
-		this.logger().fatal(message);
+		this.getLogger().fatal(message);
 	}
 
 	public default void fatal(
 			String format,
 			Object... arguments) {
 		if (!this.fatal()) return;
-		this.logger().fatal(format, arguments);
+		this.getLogger().fatal(format, arguments);
 	}
 
 	public default void fatal(
 			Throwable throwable,
 			String message) {
-		this.logger().fatal(throwable, message);
+		this.getLogger().fatal(throwable, message);
 	}
 
 	public default void fatal(
@@ -198,7 +198,7 @@ public interface Loggable {
 			String format,
 			Object... arguments) {
 		if (!this.fatal()) return;
-		this.logger().fatal(throwable, format, arguments);
+		this.getLogger().fatal(throwable, format, arguments);
 	}
 
 }

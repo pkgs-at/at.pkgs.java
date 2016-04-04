@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project default="build">
 	<!-- project settings -->
-	<property name="name" value="at.pkgs.logging.java-1.8.0-extension"/>
+	<property name="name" value="at.pkgs.logging.java8"/>
 	<property name="version" value="1.0.0"/>
 	<!-- directories -->
 	<property name="bindir" value="./bin"/>

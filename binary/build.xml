@@ -5,7 +5,7 @@
 		<ant antfile="../at.pkgs.logging/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.logging.slf4j/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.logging.log4j/build.xml" inheritAll="false" />
-		<ant antfile="../at.pkgs.logging.java-1.8.0-extension/build.xml" inheritAll="false" />
+		<ant antfile="../at.pkgs.logging.java8/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.template/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.mail/build.xml" inheritAll="false" />
 		<ant antfile="../at.pkgs.sql.nestedtx/build.xml" inheritAll="false" />
