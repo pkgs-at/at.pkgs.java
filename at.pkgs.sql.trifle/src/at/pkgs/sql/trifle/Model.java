@@ -27,7 +27,6 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 import at.pkgs.sql.trifle.dialect.Dialect;
 
 public class Model<ColumnType extends Model.Column> implements Serializable {
@@ -40,75 +39,11 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 
 	public static abstract class Via<ModelType extends Model<?>> {
 
-		public enum Isolation {
-
-			READ_UNCOMMITTED(Connection.TRANSACTION_READ_UNCOMMITTED),
-
-			READ_COMMITTED(Connection.TRANSACTION_READ_COMMITTED),
-
-			REPEATABLE_READ(Connection.TRANSACTION_REPEATABLE_READ),
-
-			SERIALIZABLE(Connection.TRANSACTION_SERIALIZABLE);
-
-			private final int value;
-
-			private Isolation(int value) {
-				this.value = value;
-			}
-
-			public int value() {
-				return this.value;
-			}
-
-		}
-
-		public static interface Transaction {
-
-			public Isolation isolation();
-
-			public int retry();
-
-			public long interval();
-
-		}
-
-		public static abstract class AbstractTransaction implements Transaction {
-
-			public Isolation isolation() {
-				return Isolation.READ_COMMITTED;
-			}
-
-			public int retry() {
-				return 0;
-			}
-
-			public long interval() {
-				return Double.valueOf(Math.random() * 1000D).longValue();
-			}
-
-		}
-
-		public static interface Action extends Transaction {
-
-			public abstract void execute(
-					Connection connection)
-							throws SQLException;
-
-		}
-
-		public static interface Function<ResultType> extends Transaction {
-
-			public abstract ResultType execute(
-					Connection connection)
-							throws SQLException;
-
-		}
-
 		protected final Dialect.Table table;
 
-		private List<Column> columns;
+		private volatile List<Column> columns;
 
-		private Constructor<?> constructor;
+		private volatile Constructor<?> constructor;
 
 		protected Via() {
 			this.table = new Dialect.Table() {
@@ -126,9 +61,31 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 			};
 		}
 
-		protected abstract Dialect getDialect();
+		protected abstract AbstractDatabase getDatabase();
 
-		protected abstract Connection getConnection() throws SQLException;
+		protected Dialect getDialect() {
+			return this.getDatabase().getDialect();
+		}
+
+		protected Connection getConnection() throws SQLException {
+			return this.getDatabase().getConnection();
+		}
+
+		protected Query query() {
+			return this.getDatabase().query();
+		}
+
+		protected <ResultType> ResultType transaction(
+				AbstractDatabase.Function<ResultType> transaction)
+						throws SQLException {
+			return this.getDatabase().transaction(transaction);
+		}
+
+		protected void transaction(
+				AbstractDatabase.Action transaction)
+						throws SQLException {
+			this.getDatabase().transaction(transaction);
+		}
 
 		private List<Column> columns() {
 			List<Column> columns;
@@ -187,109 +144,6 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 			catch (Exception cause) {
 				throw new RuntimeException(cause);
 			}
-		}
-
-		protected Query query() {
-			return new Query(this.getDialect());
-		}
-
-		protected <ResultType> ResultType transaction(
-				Function<ResultType> transaction)
-						throws SQLException {
-			int retry;
-
-			retry = 0;
-			while (true) {
-				Connection connection;
-				boolean ignore;
-				Integer transactionIsolation;
-				Boolean autoCommit;
-
-				connection = this.getConnection();
-				ignore = true;
-				transactionIsolation = null;
-				autoCommit = null;
-				try {
-					ResultType result;
-					Isolation isolation;
-
-					isolation = transaction.isolation();
-					if (isolation != null) {
-						transactionIsolation = connection.getTransactionIsolation();
-						connection.setTransactionIsolation(isolation.value());
-					}
-					autoCommit = connection.getAutoCommit();
-					connection.setAutoCommit(false);
-					result = transaction.execute(connection);
-					connection.commit();
-					if (autoCommit != null)
-						connection.setAutoCommit(autoCommit);
-					if (transactionIsolation != null)
-						connection.setTransactionIsolation(transactionIsolation);
-					ignore = false;
-					return result;
-				}
-				catch (SQLException cause) {
-					try {
-						connection.rollback();
-						if (autoCommit != null)
-							connection.setAutoCommit(autoCommit);
-						if (transactionIsolation != null)
-							connection.setTransactionIsolation(transactionIsolation);
-					}
-					catch (SQLException ignored) {
-						// do nothing
-					}
-					if (cause instanceof SQLNonTransientException) throw cause;
-					if (retry >= transaction.retry()) throw cause;
-				}
-				finally {
-					try {
-						connection.close();
-					}
-					catch (SQLException cause) {
-						if (!ignore) throw cause;
-					}
-				}
-				retry ++;
-				try {
-					Thread.sleep(transaction.interval());
-				}
-				catch (InterruptedException ignored) {
-					// do nothing
-				}
-			}
-		}
-
-		protected void transaction(
-				final Action transaction)
-						throws SQLException {
-			this.transaction(new Function<Void>() {
-
-				@Override
-				public Isolation isolation() {
-					return transaction.isolation();
-				}
-
-				@Override
-				public int retry() {
-					return transaction.retry();
-				}
-
-				@Override
-				public long interval() {
-					return transaction.interval();
-				}
-
-				@Override
-				public Void execute(
-						Connection connection)
-								throws SQLException {
-					transaction.execute(connection);
-					return null;
-				}
-
-			});
 		}
 
 		@SuppressWarnings("unchecked")

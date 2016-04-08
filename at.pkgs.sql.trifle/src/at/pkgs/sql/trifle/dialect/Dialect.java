@@ -42,6 +42,21 @@ public abstract class Dialect {
 		query.append('"');
 	}
 
+	public void quoted(
+			Query query,
+			String value) {
+		if (value == null) {
+			query.append("NULL");
+			return;
+		}
+		query.append('\'');
+		for (char character : value.toCharArray()) {
+			if (character == '\'') query.append('\'');
+			query.append(character);
+		}
+		query.append('\'');
+	}
+
 	public void select(
 			Query query,
 			Table table,

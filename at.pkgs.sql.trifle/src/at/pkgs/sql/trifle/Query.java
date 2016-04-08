@@ -743,6 +743,11 @@ public class Query {
 		return this;
 	}
 
+	public Query quoted(String value) {
+		this.dialect.quoted(this, value);
+		return this;
+	}
+
 	public Query append(boolean value) {
 		this.query.append(value ? "TRUE" : "FALSE");
 		return this;

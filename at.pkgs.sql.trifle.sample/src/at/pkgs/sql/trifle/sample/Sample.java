@@ -18,10 +18,11 @@
 package at.pkgs.sql.trifle.sample;
 
 import java.sql.Connection;
+import at.pkgs.sql.trifle.AbstractDatabase;
+import at.pkgs.sql.trifle.Model;
 import at.pkgs.sql.trifle.Query;
 import at.pkgs.sql.trifle.dialect.Dialect;
 import at.pkgs.sql.trifle.dialect.PostgreSQL;
-import at.pkgs.sql.trifle.Model;
 
 public class Sample extends Model<Sample.Column> {
 
@@ -44,17 +45,22 @@ public class Sample extends Model<Sample.Column> {
 
 	}
 
-	public static class Via extends Model.Via<Sample> {
+	public static final Dialect DIALECT = new PostgreSQL();
 
-		private final Dialect dialect;
-
-		public Via() {
-			this.dialect = new PostgreSQL();
-		}
+	public static final AbstractDatabase DATABASE = new AbstractDatabase() {
 
 		@Override
 		protected Dialect getDialect() {
-			return this.dialect;
+			return Sample.DIALECT;
+		}
+
+	};
+
+	public static class Via extends Model.Via<Sample> {
+
+		@Override
+		protected AbstractDatabase getDatabase() {
+			return Sample.DATABASE;
 		}
 
 		@Override
