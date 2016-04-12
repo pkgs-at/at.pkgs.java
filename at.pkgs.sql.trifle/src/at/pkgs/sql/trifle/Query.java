@@ -117,6 +117,46 @@ public class Query {
 
 	}
 
+	public static class Identifier implements Visitor {
+
+		private final String name;
+
+		public Identifier(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public boolean applicable() {
+			return true;
+		}
+
+		@Override
+		public void apply(Query query) {
+			query.identifier(name);
+		}
+
+	}
+
+	public static class Parts implements Visitor {
+
+		private final Object[] parts;
+
+		public Parts(Object... parts) {
+			this.parts = parts;
+		}
+
+		@Override
+		public boolean applicable() {
+			return true;
+		}
+
+		@Override
+		public void apply(Query query) {
+			for (Object part : this.parts) query.append(part);
+		}
+
+	}
+
 	public static class Group implements Visitor {
 
 		private final Object leading;
@@ -865,6 +905,14 @@ public class Query {
 			Connection connection)
 					throws SQLException {
 		return this.bind(connection.prepareStatement(this.query.toString()));
+	}
+
+	public static Value valueOf(Object value) {
+		return new Value(value);
+	}
+
+	public static Identifier identifierOf(String name) {
+		return new Identifier(name);
 	}
 
 }
