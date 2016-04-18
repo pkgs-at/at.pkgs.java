@@ -17,22 +17,14 @@
 
 package at.pkgs.web.trio;
 
-import java.io.InputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.net.URL;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import at.pkgs.template.TemplateResource;
-import at.pkgs.template.TemplateResolver;
-import at.pkgs.template.InputStreamResource;
-import at.pkgs.template.TemplateEngine;
 import at.pkgs.template.Template;
 import at.pkgs.web.http.HttpRequest;
 import at.pkgs.web.http.HttpResponse;
@@ -40,79 +32,16 @@ import at.pkgs.web.http.HttpResponse;
 public abstract class AbstractServlet
 extends HttpServlet implements ContextHolder {
 
-	public class Resolver implements TemplateResolver {
-
-		@Override
-		public TemplateResource getResource(
-				final String path)
-						throws IOException {
-			final URL url;
-
-			url = AbstractServlet.this.context.getResource(path);
-			if (url == null)
-				throw new FileNotFoundException(
-						"resource not found: " +
-						path);
-			return new InputStreamResource(
-					AbstractServlet.this.getTemplateCharset()) {
-
-				@Override
-				public String getLocation()
-						throws IOException {
-					return url.toString();
-				}
-
-				@Override
-				protected InputStream open() throws IOException {
-					return url.openStream();
-				}
-
-			};
-		}
-
-	}
-
 	private static final long serialVersionUID = 1L;
 
 	private ServletContext context;
 
-	private TemplateEngine engine;
-
-	protected void include(String path) throws IOException {
-		URL url;
-
-		url = this.context.getResource(path);
-		if (url == null)
-			throw new FileNotFoundException(
-					"resource not found: " +
-					path);
-		try (InputStream input = url.openStream()) {
-			this.engine.include(input);
-		}
-	}
+	private volatile TemplateFactory templateFactory;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
-		String includes;
-
 		super.init(config);
 		this.context = config.getServletContext();
-		includes = this.context.getInitParameter(
-				this.getClass().getPackage().getName() +
-				".template.includes");
-		try {
-			this.engine = new TemplateEngine(new Resolver());
-			if (includes != null) {
-				for (String path : includes.split("\\s+")) {
-					if (path.length() <= 0) continue;
-					this.include(path);
-				}
-			}
-			// TODO debug no-cache
-		}
-		catch (IOException cause) {
-			throw new ServletException(cause);
-		}
 	}
 
 	@Override
@@ -120,14 +49,19 @@ extends HttpServlet implements ContextHolder {
 		return this.context;
 	}
 
-	protected Charset getTemplateCharset() {
-		return StandardCharsets.UTF_8;
+	protected TemplateFactory getTemplateFactory() {
+		if (this.templateFactory == null) {
+			synchronized (this) {
+				if (this.templateFactory == null)
+					this.templateFactory = new TemplateFactory(this.context);
+			}
+		}
+		return this.templateFactory;
 	}
 
 	protected Template getTemplate(String path)
 			throws IOException {
-		// TODO cache
-		return this.engine.template(path);
+		return this.getTemplateFactory().getTemplate(path);
 	}
 
 	protected AbstractHandler newDefaultHandler(

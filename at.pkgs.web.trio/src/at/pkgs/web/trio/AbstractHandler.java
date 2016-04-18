@@ -150,13 +150,6 @@ public abstract class AbstractHandler {
 			this.text = text;
 		}
 
-		public Message(
-				MessageType type,
-				String format,
-				Object... parameters) {
-			this(type, String.format(format, parameters));
-		}
-
 		public MessageType getType() {
 			return this.type;
 		}
@@ -324,6 +317,12 @@ public abstract class AbstractHandler {
 		}
 	}
 
+	public String format(
+			String format,
+			Object... parameters) {
+		return String.format(format, parameters);
+	}
+
 	public void addMessage(
 			Message message) {
 		this.messages.add(message);
@@ -332,87 +331,33 @@ public abstract class AbstractHandler {
 
 	public void addMessage(
 			MessageType type,
-			String text) {
-		this.addMessage(new Message(type, text));
-	}
-
-	public void addMessage(
-			MessageType type,
 			String format,
 			Object... parameters) {
-		this.addMessage(new Message(type, format, parameters));
-	}
-
-	public void addErrorMessage(
-			String text) {
-		this.addMessage(
-				new Message(
-						MessageType.ERROR,
-						text));
+		this.addMessage(new Message(type, this.format(format, parameters)));
 	}
 
 	public void addErrorMessage(
 			String format,
 			Object... parameters) {
-		this.addMessage(
-				new Message(
-						MessageType.ERROR,
-						format,
-						parameters));
-	}
-
-	public void addWarningMessage(
-			String text) {
-		this.addMessage(
-				new Message(
-						MessageType.WARNING,
-						text));
+		this.addMessage(MessageType.ERROR, format, parameters);
 	}
 
 	public void addWarningMessage(
 			String format,
 			Object... parameters) {
-		this.addMessage(
-				new Message(
-						MessageType.WARNING,
-						format,
-						parameters));
-	}
-
-	public void addNoticeMessage(
-			String text) {
-		this.addMessage(
-				new Message(
-						MessageType.NOTICE,
-						text));
+		this.addMessage(MessageType.WARNING, format, parameters);
 	}
 
 	public void addNoticeMessage(
 			String format,
 			Object... parameters) {
-		this.addMessage(
-				new Message(
-						MessageType.NOTICE,
-						format,
-						parameters));
-	}
-
-	public void addSuccessMessage(
-			String text) {
-		this.addMessage(
-				new Message(
-						MessageType.SUCCESS,
-						text));
+		this.addMessage(MessageType.NOTICE, format, parameters);
 	}
 
 	public void addSuccessMessage(
 			String format,
 			Object... parameters) {
-		this.addMessage(
-				new Message(
-						MessageType.SUCCESS,
-						format,
-						parameters));
+		this.addMessage(MessageType.SUCCESS, format, parameters);
 	}
 
 	public Message[] flashMessages() {
