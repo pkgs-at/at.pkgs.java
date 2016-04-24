@@ -84,12 +84,18 @@ public abstract class AbstractHandler {
 					throw new ServletException(cause);
 				}
 				response.setParameter("$", handler);
-				handler.initialize(this, request, response);
-				if (handler.finished()) return;
-				handler.handle();
-				if (handler.finished()) return;
-				handler.complete();
-				if (handler.finished()) return;
+				try {
+					handler.initialize(this, request, response);
+					if (handler.finished()) return;
+					handler.handle();
+					if (handler.finished()) return;
+					handler.complete();
+					if (handler.finished()) return;
+				}
+				catch (Exception cause) {
+					handler.trap(cause);
+					if (handler.finished()) return;
+				}
 			}
 			chain.doFilter(request, response);
 		}
@@ -185,7 +191,7 @@ public abstract class AbstractHandler {
 			ContextHolder holder,
 			HttpRequest request,
 			HttpResponse response)
-					throws ServletException, IOException {
+					throws Exception {
 		HttpSession session;
 		Object messages;
 
@@ -383,10 +389,22 @@ public abstract class AbstractHandler {
 	}
 
 	protected abstract void handle()
-			throws ServletException, IOException;
+			throws Exception;
 
 	protected void complete()
-			throws ServletException, IOException {
+			throws Exception {
+	}
+
+	protected void trap(
+			Exception cause)
+					throws ServletException, IOException {
+		if (cause instanceof ServletException)
+			throw (ServletException)cause;
+		if (cause instanceof IOException)
+			throw (IOException)cause;
+		if (cause instanceof RuntimeException)
+			throw (RuntimeException)cause;
+		throw new RuntimeException(cause);
 	}
 
 }

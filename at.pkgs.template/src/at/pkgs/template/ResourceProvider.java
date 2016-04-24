@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2014, Architector Inc., Japan
+ * Copyright (c) 2009-2016, Architector Inc., Japan
  * All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,22 +17,20 @@
 
 package at.pkgs.template;
 
-import java.io.IOException;
+import java.net.URL;
 
-public interface TemplateResolver {
+public interface ResourceProvider {
 
-	public TemplateResource getResource(String path) throws IOException;
+	public URL getResource(String path);
 
-	public default TemplateResolver chain(final TemplateResolver defaults) {
-		return new TemplateResolver() {
+	public default ResourceProvider chain(final ResourceProvider defaults) {
+		return new ResourceProvider() {
 
 			@Override
-			public TemplateResource getResource(
-					String path)
-							throws IOException {
-				TemplateResource resource;
+			public URL getResource(String path) {
+				URL resource;
 
-				resource = TemplateResolver.this.getResource(path);
+				resource = ResourceProvider.this.getResource(path);
 				if (resource != null) return resource;
 				else return defaults.getResource(path);
 			}

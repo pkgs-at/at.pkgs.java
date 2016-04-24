@@ -19,6 +19,9 @@ package at.pkgs.web.trio;
 
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.net.URL;
+import java.net.MalformedURLException;
+import java.nio.charset.Charset;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -26,11 +29,38 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import at.pkgs.template.Template;
+import at.pkgs.template.TemplateFactory;
+import at.pkgs.template.ResourceProvider;
+import at.pkgs.template.ResourceProviderResolver;
 import at.pkgs.web.http.HttpRequest;
 import at.pkgs.web.http.HttpResponse;
 
 public abstract class AbstractServlet
 extends HttpServlet implements ContextHolder {
+
+	public static class Resolver extends ResourceProviderResolver {
+
+		public Resolver(final ServletContext context, Charset charset) {
+			super(new ResourceProvider() {
+
+				@Override
+				public URL getResource(String path) {
+					try {
+						return context.getResource(path);
+					}
+					catch (MalformedURLException cause) {
+						throw new RuntimeException(cause);
+					}
+				}
+
+			}, charset);
+		}
+
+		public Resolver(ServletContext context) {
+			this(context, null);
+		}
+
+	}
 
 	private static final long serialVersionUID = 1L;
 
@@ -49,11 +79,20 @@ extends HttpServlet implements ContextHolder {
 		return this.context;
 	}
 
-	protected TemplateFactory getTemplateFactory() {
+	protected TemplateFactory newTemplateFactory() {
+		try {
+			return new TemplateFactory(new Resolver(this.getContext()));
+		}
+		catch (IOException cause) {
+			throw new RuntimeException(cause);
+		}
+	}
+
+	private TemplateFactory getTemplateFactory() {
 		if (this.templateFactory == null) {
 			synchronized (this) {
 				if (this.templateFactory == null)
-					this.templateFactory = new TemplateFactory(this.context);
+					this.templateFactory = this.newTemplateFactory();
 			}
 		}
 		return this.templateFactory;
@@ -94,12 +133,18 @@ extends HttpServlet implements ContextHolder {
 
 			handler = this.newDefaultHandler(request, response);
 			response.setParameter("$", handler);
-			handler.initialize(this, request, response);
-			if (handler.finished()) return;
-			handler.handle();
-			if (handler.finished()) return;
-			handler.complete();
-			if (handler.finished()) return;
+			try {
+				handler.initialize(this, request, response);
+				if (handler.finished()) return;
+				handler.handle();
+				if (handler.finished()) return;
+				handler.complete();
+				if (handler.finished()) return;
+			}
+			catch (Exception cause) {
+				handler.trap(cause);
+				if (handler.finished()) return;
+			}
 		}
 		path = request.getServletPath();
 		pathInfo = request.getPathInfo();
