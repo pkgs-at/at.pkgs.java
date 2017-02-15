@@ -35,6 +35,10 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 
 		public void expression(Query query);
 
+		public Object serialize(Object value);
+
+		public Object deserialize(Object serial);
+
 	}
 
 	public static abstract class Via<ModelType extends Model<?>> {
@@ -76,15 +80,17 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 		}
 
 		protected <ResultType> ResultType transaction(
+				Connection inherited,
 				AbstractDatabase.Function<ResultType> transaction)
 						throws SQLException {
-			return this.getDatabase().transaction(transaction);
+			return this.getDatabase().transaction(inherited, transaction);
 		}
 
 		protected void transaction(
+				Connection inherited,
 				AbstractDatabase.Action transaction)
 						throws SQLException {
-			this.getDatabase().transaction(transaction);
+			this.getDatabase().transaction(inherited, transaction);
 		}
 
 		private List<Column> columns() {
@@ -155,8 +161,12 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 
 			model = this.model();
 			map = (Map<Object, Object>)model.values;
-			for (int index = 0; index < values.length; index ++)
-				map.put(columns.get(index), values[index]);
+			for (int index = 0; index < values.length; index ++) {
+				Column column;
+
+				column = columns.get(index);
+				map.put(column, column.deserialize(values[index]));
+			}
 			return (ModelType)model;
 		}
 
@@ -170,7 +180,7 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 			if (!result.next()) return null;
 			for (int index = 0; index < values.length; index ++)
 				values[index] = result.getObject(index + 1);
-			return (ModelType)this.populate(columns, values);
+			return this.populate(columns, values);
 		}
 
 		protected List<ModelType> populateAll(
@@ -185,7 +195,7 @@ public class Model<ColumnType extends Model.Column> implements Serializable {
 			while (result.next()) {
 				for (int index = 0; index < values.length; index ++)
 					values[index] = result.getObject(index + 1);
-				models.add((ModelType)this.populate(columns, values));
+				models.add(this.populate(columns, values));
 			}
 			return models;
 		}

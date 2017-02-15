@@ -43,6 +43,16 @@ public class Sample extends Model<Sample.Column> {
 			query.identifier(this.column);
 		}
 
+		@Override
+		public Object serialize(Object value) {
+			return value;
+		}
+
+		@Override
+		public Object deserialize(Object serial) {
+			return serial;
+		}
+
 	}
 
 	public static final Dialect DIALECT = new PostgreSQL();

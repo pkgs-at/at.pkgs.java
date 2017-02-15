@@ -31,7 +31,7 @@ public class H2Database extends Dialect {
 			long offset,
 			long length) {
 		super.select(query, table, distinct, criteria, sort, -1L, -1L);
-		if (length >= 0L) query.append(" LIMIT ").value(offset);
+		if (length >= 0L) query.append(" LIMIT ").value(length);
 		if (offset >= 0L) query.append(" OFFSET ").value(offset);
 	}
 

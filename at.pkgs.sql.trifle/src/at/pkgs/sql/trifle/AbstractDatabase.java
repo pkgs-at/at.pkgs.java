@@ -99,10 +99,13 @@ public abstract class AbstractDatabase {
 	}
 
 	protected <ResultType> ResultType transaction(
+			Connection inherited,
 			Function<ResultType> transaction)
 					throws SQLException {
 		int retry;
 
+		if (inherited != null)
+			return transaction.execute(inherited);
 		retry = 0;
 		while (true) {
 			Connection connection;
@@ -167,9 +170,10 @@ public abstract class AbstractDatabase {
 	}
 
 	protected void transaction(
+			Connection inherited,
 			final Action transaction)
 					throws SQLException {
-		this.transaction(new Function<Void>() {
+		this.transaction(inherited, new Function<Void>() {
 
 			@Override
 			public Isolation isolation() {

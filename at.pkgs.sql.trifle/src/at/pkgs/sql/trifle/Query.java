@@ -24,11 +24,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import at.pkgs.sql.trifle.dialect.Dialect;
 
 public class Query {
+
+	public static interface StatementCollector {
+
+		public void add(Statement statement);
+
+	}
 
 	public static interface Variable {
 
@@ -41,6 +48,11 @@ public class Query {
 
 	}
 
+	/*
+	 * CAUTION
+	 * 
+	 * IS NULL (e.g. WHERE clause)
+	 */
 	public static class ValueHolder<Type> {
 
 		private Type value;
@@ -67,36 +79,46 @@ public class Query {
 
 		private final Object value;
 
-		public Value(Object value) {
+		private final Model.Column column;
+
+		public Value(Object value, Model.Column column) {
 			this.value = value;
+			this.column = column;
+		}
+
+		protected Value(Object value, Object column) {
+			this(value, column instanceof Model.Column ? (Model.Column)column : null);
+		}
+
+		public Value(Object value) {
+			this(value, null);
 		}
 
 		public Object getValue() {
 			return this.value;
 		}
 
+		public Object getSerial() {
+			Object value;
+
+			value = this.getValue();
+			if (value instanceof ValueHolder)
+				value = ((ValueHolder<?>)value).get();
+			if (this.column != null)
+				value = column.serialize(value);
+			return value;
+		}
+
 		@Override
 		public boolean isNull() {
-			if (this.value instanceof ValueHolder)
-				return ((ValueHolder<?>)this.value).get() == value;
-			else
-				return this.getValue() == null;
+			if (this.getValue() instanceof ValueHolder<?>)
+				throw new UnsupportedOperationException("ValueHolder cannot use with Criteria");
+			return this.getValue() == null;
 		}
 
 		@Override
 		public String toString() {
-			return this.isNull() ? "NULL" : this.getValue().toString();
-		}
-
-		public void bind(
-				PreparedStatement statement,
-				int order,
-				Object value)
-						throws SQLException {
-			if (value instanceof ValueHolder)
-				statement.setObject(order, ((ValueHolder<?>)value).get());
-			else
-				statement.setObject(order, value);
+			return this.getValue() == null ? "NULL" : this.getValue().toString();
 		}
 
 		@Override
@@ -104,7 +126,7 @@ public class Query {
 				PreparedStatement statement,
 				int order)
 						throws SQLException {
-			this.bind(statement, order, this.getValue());
+			statement.setObject(order, this.getSerial());
 		}
 
 	}
@@ -184,29 +206,33 @@ public class Query {
 		}
 
 		@SuppressWarnings("unchecked")
-		public void add(Object value) {
-			if (value == null) {
-				this.contents.add(null);
-				return;
-			}
-			if (value.getClass().isArray()) {
-				int length;
+		public Group add(Object... values) {
+			for (Object value : values) {
+				if (value == null) {
+					this.contents.add(null);
+					continue;
+				}
+				if (value.getClass().isArray()) {
+					int length;
 
-				length = Array.getLength(value);
-				for (int index = 0; index < length; index ++)
-					this.add(Array.get(value, index));
-				return;
+					length = Array.getLength(value);
+					for (int index = 0; index < length; index ++)
+						this.add(Array.get(value, index));
+					continue;
+				}
+				if (value instanceof Collection) {
+					for (Object item : (Collection<Object>)value)
+						this.add(item);
+					continue;
+				}
+				this.contents.add(value);
 			}
-			if (value instanceof Collection) {
-				for (Object item : (Collection<Object>)value)
-					this.add(item);
-				return;
-			}
-			this.contents.add(value);
+			return this;
 		}
 
-		public void add(Object... values) {
-			for (Object value : values) this.add(value);
+		public Group addIf(boolean condition, Object... values) {
+			if (condition) this.add(values);
+			return this;
 		}
 
 		@Override
@@ -259,12 +285,63 @@ public class Query {
 			super("(", " AND ", ")", null, (Object[])contents);
 		}
 
+		@Override
+		public And add(Object... values) {
+			return (And)super.add(values);
+		}
+
+		@Override
+		public And addIf(boolean condition, Object... values) {
+			return (And)super.addIf(condition, values);
+		}
+
 	}
 
 	public static class Or extends Group implements Criteria {
 
 		public Or(Criteria... contents) {
 			super("(", " OR ", ")", null, (Object[])contents);
+		}
+
+		@Override
+		public Or add(Object... values) {
+			return (Or)super.add(values);
+		}
+
+		@Override
+		public Or addIf(boolean condition, Object... values) {
+			return (Or)super.addIf(condition, values);
+		}
+
+	}
+
+	public static class Assign implements Visitor {
+
+		private final Object column;
+
+		private final Object value;
+
+		public Assign(Object column, Object value) {
+			this.column = column;
+			this.value = value;
+		}
+
+		@Override
+		public boolean applicable() {
+			return true;
+		}
+
+		@Override
+		public void apply(Query query) {
+			query.append(this.column).append(" = ").append(this.value);
+		}
+
+		public static Assign value(Object column, Object value) {
+			return new Assign(column, new Value(value, column));
+		}
+
+		public static Assign parts(Object column, Object... parts) {
+			return new Assign(column, new Parts(parts));
 		}
 
 	}
@@ -300,7 +377,11 @@ public class Query {
 		}
 
 		public static Equal value(Object column, Object value) {
-			return new Equal(column, new Value(value));
+			return new Equal(column, new Value(value, column));
+		}
+
+		public static Equal parts(Object column, Object... parts) {
+			return new Equal(column, new Parts(parts));
 		}
 
 	}
@@ -336,7 +417,11 @@ public class Query {
 		}
 
 		public static NotEqual value(Object column, Object value) {
-			return new NotEqual(column, new Value(value));
+			return new NotEqual(column, new Value(value, column));
+		}
+
+		public static NotEqual parts(Object column, Object... parts) {
+			return new NotEqual(column, new Parts(parts));
 		}
 
 	}
@@ -363,7 +448,11 @@ public class Query {
 		}
 
 		public static LessThan value(Object column, Object value) {
-			return new LessThan(column, new Value(value));
+			return new LessThan(column, new Value(value, column));
+		}
+
+		public static LessThan parts(Object column, Object... parts) {
+			return new LessThan(column, new Parts(parts));
 		}
 
 	}
@@ -390,7 +479,11 @@ public class Query {
 		}
 
 		public static GreaterThan value(Object column, Object value) {
-			return new GreaterThan(column, new Value(value));
+			return new GreaterThan(column, new Value(value, column));
+		}
+
+		public static GreaterThan parts(Object column, Object... parts) {
+			return new GreaterThan(column, new Parts(parts));
 		}
 
 	}
@@ -417,7 +510,11 @@ public class Query {
 		}
 
 		public static LessEqual value(Object column, Object value) {
-			return new LessEqual(column, new Value(value));
+			return new LessEqual(column, new Value(value, column));
+		}
+
+		public static LessEqual parts(Object column, Object... parts) {
+			return new LessEqual(column, new Parts(parts));
 		}
 
 	}
@@ -444,7 +541,11 @@ public class Query {
 		}
 
 		public static GreaterEqual value(Object column, Object value) {
-			return new GreaterEqual(column, new Value(value));
+			return new GreaterEqual(column, new Value(value, column));
+		}
+
+		public static GreaterEqual parts(Object column, Object... parts) {
+			return new GreaterEqual(column, new Parts(parts));
 		}
 
 	}
@@ -499,7 +600,7 @@ public class Query {
 
 			list = new ArrayList<Value>();
 			for (Object value : values)
-				list.add(new Value(value));
+				list.add(new Value(value, column));
 			return new In(column, list);
 		}
 
@@ -559,7 +660,7 @@ public class Query {
 
 			list = new ArrayList<Value>();
 			for (Object value : values)
-				list.add(new Value(value));
+				list.add(new Value(value, column));
 			return new NotIn(column, list);
 		}
 
@@ -614,8 +715,8 @@ public class Query {
 				Object second) {
 			return new Between(
 					column,
-					new Value(first),
-					new Value(second));
+					new Value(first, column),
+					new Value(second, column));
 		}
 
 	}
@@ -665,8 +766,8 @@ public class Query {
 				Object second) {
 			return new NotBetween(
 					column,
-					new Value(first),
-					new Value(second));
+					new Value(first, column),
+					new Value(second, column));
 		}
 
 	}
@@ -750,14 +851,21 @@ public class Query {
 
 	private final Dialect dialect;
 
+	private final StatementCollector collector;
+
 	private final StringBuilder query;
 
 	private final List<Variable> variables;
 
-	public Query(Dialect dialect) {
+	public Query(Dialect dialect, StatementCollector collector) {
 		this.dialect = dialect;
+		this.collector = collector;
 		this.query = new StringBuilder();
 		this.variables = new ArrayList<Variable>();
+	}
+
+	public Query(Dialect dialect) {
+		this(dialect, null);
 	}
 
 	@Override
@@ -861,8 +969,12 @@ public class Query {
 		return this;
 	}
 
+	public Query value(Object value, Object column) {
+		return this.append(new Value(value, column));
+	}
+
 	public Query value(Object value) {
-		return this.append(new Value(value));
+		return this.value(value, null);
 	}
 
 	public Query clause(
@@ -895,16 +1007,23 @@ public class Query {
 	public PreparedStatement bind(
 			PreparedStatement statement)
 					throws SQLException {
-		if (Query.DEBUG) System.out.println(this);
 		for (int index = 0; index < this.variables.size();)
 			this.variables.get(index).bind(statement, ++ index);
 		return statement;
 	}
 
 	public PreparedStatement prepare(
+			PreparedStatement statement)
+					throws SQLException {
+		if (Query.DEBUG) System.out.println(this);
+		if (this.collector != null) this.collector.add(statement);
+		return this.bind(statement);
+	}
+
+	public PreparedStatement prepare(
 			Connection connection)
 					throws SQLException {
-		return this.bind(connection.prepareStatement(
+		return this.prepare(connection.prepareStatement(
 				this.query.toString()));
 	}
 
@@ -912,7 +1031,7 @@ public class Query {
 			Connection connection,
 			int autoGeneratedKeys)
 					throws SQLException {
-		return this.bind(connection.prepareStatement(
+		return this.prepare(connection.prepareStatement(
 				this.query.toString(),
 				autoGeneratedKeys));
 	}
@@ -921,7 +1040,7 @@ public class Query {
 			Connection connection,
 			int[] columnIndexes)
 					throws SQLException {
-		return this.bind(connection.prepareStatement(
+		return this.prepare(connection.prepareStatement(
 				this.query.toString(),
 				columnIndexes));
 	}
@@ -931,7 +1050,7 @@ public class Query {
 			int resultSetType,
 			int resultSetConcurrency)
 					throws SQLException {
-		return this.bind(connection.prepareStatement(
+		return this.prepare(connection.prepareStatement(
 				this.query.toString(),
 				resultSetType,
 				resultSetConcurrency));
@@ -943,7 +1062,7 @@ public class Query {
 			int resultSetConcurrency,
 			int resultSetHoldability)
 					throws SQLException {
-		return this.bind(connection.prepareStatement(
+		return this.prepare(connection.prepareStatement(
 				this.query.toString(),
 				resultSetType,
 				resultSetConcurrency,
@@ -954,17 +1073,25 @@ public class Query {
 			Connection connection,
 			String[] columnNames)
 					throws SQLException {
-		return this.bind(connection.prepareStatement(
+		return this.prepare(connection.prepareStatement(
 				this.query.toString(),
 				columnNames));
 	}
 
+	public static Value valueOf(Object value, Object column) {
+		return new Value(value, column);
+	}
+
 	public static Value valueOf(Object value) {
-		return new Value(value);
+		return Query.valueOf(value, null);
 	}
 
 	public static Identifier identifierOf(String name) {
 		return new Identifier(name);
+	}
+
+	public static Parts partsOf(Object... parts) {
+		return new Parts(parts);
 	}
 
 }
