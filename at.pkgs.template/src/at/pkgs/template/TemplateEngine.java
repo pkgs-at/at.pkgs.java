@@ -75,6 +75,17 @@ public class TemplateEngine {
 		this.include(input, StandardCharsets.UTF_8);
 	}
 
+	public void include(String path)
+			throws IOException {
+		try {
+			this.script.eval(
+					this.getTemplateResolver().getResource(path).getContent());
+		}
+		catch (ScriptException throwable) {
+			throw new TemplateException(throwable);
+		}
+	}
+
 	public TemplateResolver getTemplateResolver() {
 		return this.resolver;
 	}

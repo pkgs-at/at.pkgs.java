@@ -26,6 +26,8 @@ public class Template {
 
 	private final TemplateEngine engine;
 
+	private final String content;
+
 	private final Object script;
 
 	public Template(TemplateEngine engine, String path) throws IOException {
@@ -34,15 +36,21 @@ public class Template {
 		this.engine = engine;
 		parser = new TemplateParser(this.engine.getTemplateResolver());
 		parser.parse(path);
+		this.content = parser.content();
 		try {
 			this.script =
 					this.engine.getInvoker().invokeFunction(
 							"template",
-							parser.content());
+							this.content);
 		}
 		catch (ScriptException | NoSuchMethodException throwable) {
 			throw new TemplateException(throwable);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return this.content;
 	}
 
 	public String render(Iterable<Map.Entry<String, Object>> iterable) {

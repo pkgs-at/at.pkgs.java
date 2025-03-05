@@ -426,6 +426,68 @@ public class Query {
 
 	}
 
+	public static class Like implements Criteria {
+
+		private final Object column;
+
+		private final Object value;
+
+		public Like(Object column, Object value) {
+			this.column = column;
+			this.value = value;
+		}
+
+		@Override
+		public boolean applicable() {
+			return value != null;
+		}
+
+		@Override
+		public void apply(Query query) {
+			query.append(this.column).append(" LIKE ").append(this.value);
+		}
+
+		public static Like value(Object column, Object value) {
+			return new Like(column, new Value(value, column));
+		}
+
+		public static Like parts(Object column, Object... parts) {
+			return new Like(column, new Parts(parts));
+		}
+
+	}
+
+	public static class NotLike implements Criteria {
+
+		private final Object column;
+
+		private final Object value;
+
+		public NotLike(Object column, Object value) {
+			this.column = column;
+			this.value = value;
+		}
+
+		@Override
+		public boolean applicable() {
+			return value != null;
+		}
+
+		@Override
+		public void apply(Query query) {
+			query.append(this.column).append(" NOT LIKE ").append(this.value);
+		}
+
+		public static NotLike value(Object column, Object value) {
+			return new NotLike(column, new Value(value, column));
+		}
+
+		public static NotLike parts(Object column, Object... parts) {
+			return new NotLike(column, new Parts(parts));
+		}
+
+	}
+
 	public static class LessThan implements Criteria {
 
 		private final Object column;

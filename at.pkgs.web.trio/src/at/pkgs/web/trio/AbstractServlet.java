@@ -64,9 +64,9 @@ extends HttpServlet implements ContextHolder {
 
 	private static final long serialVersionUID = 1L;
 
-	private ServletContext context;
+	private static volatile TemplateFactory templateFactory;
 
-	private volatile TemplateFactory templateFactory;
+	private ServletContext context;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -81,7 +81,14 @@ extends HttpServlet implements ContextHolder {
 
 	protected TemplateFactory newTemplateFactory() {
 		try {
-			return new TemplateFactory(new Resolver(this.getContext()));
+			TemplateFactory factory;
+
+			factory = new TemplateFactory(
+					new Resolver(this.getContext()),
+					ContextParameter.get().getTemplateCache());
+			for (String include : ContextParameter.get().getTemplateIncludes())
+				factory.getTemplateEngine().include(include);
+			return factory;
 		}
 		catch (IOException cause) {
 			throw new RuntimeException(cause);
@@ -89,13 +96,15 @@ extends HttpServlet implements ContextHolder {
 	}
 
 	private TemplateFactory getTemplateFactory() {
-		if (this.templateFactory == null) {
-			synchronized (this) {
-				if (this.templateFactory == null)
-					this.templateFactory = this.newTemplateFactory();
+		if (AbstractServlet.templateFactory == null) {
+			synchronized (this.getClass()) {
+				if (AbstractServlet.templateFactory == null) {
+					AbstractServlet.templateFactory =
+							this.newTemplateFactory();
+				}
 			}
 		}
-		return this.templateFactory;
+		return AbstractServlet.templateFactory;
 	}
 
 	protected Template getTemplate(String path)
